@@ -1,0 +1,5 @@
+app_identifier("io.radarapp.mobile")
+apple_id(ENV["APP_STORE_CONNECT_EMAIL"])
+
+itc_team_id(ENV["APP_STORE_CONNECT_TEAM_ID"])
+team_id(ENV["APPLE_DEVELOPER_TEAM_ID"])
