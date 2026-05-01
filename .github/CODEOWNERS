@@ -1,0 +1,3 @@
+* @radarapp/platform
+apps/backend/src/core/* @radarapp/security
+infra/* @radarapp/platform @radarapp/security

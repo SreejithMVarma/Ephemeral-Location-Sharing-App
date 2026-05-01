@@ -1,0 +1,6 @@
+# Global owners
+* @radarapp/platform
+
+# Sensitive paths
+apps/backend/src/core/* @radarapp/security
+infra/* @radarapp/platform @radarapp/security

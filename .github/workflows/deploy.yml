@@ -1,0 +1,27 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  docker-build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: apps/backend
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t radarapp-backend:${{ github.sha }} .
+      - name: Trivy scan
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: radarapp-backend:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+      - name: Push image (placeholder)
+        run: echo "Configure registry auth and push command for your cloud registry"

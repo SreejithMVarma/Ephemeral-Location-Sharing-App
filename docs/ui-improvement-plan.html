@@ -1,0 +1,673 @@
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+.wrap{font-family:'Space Grotesk',sans-serif;color:var(--color-text-primary);padding:1.5rem 0}
+
+.hero{text-align:center;padding:2rem 1rem 1.5rem;border-bottom:0.5px solid var(--color-border-tertiary)}
+.hero-label{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:0.2em;color:var(--color-text-tertiary);margin-bottom:10px}
+.hero-h{font-size:28px;font-weight:700;line-height:1.1;margin-bottom:6px}
+.hero-sub{font-size:13px;color:var(--color-text-secondary);max-width:480px;margin:0 auto}
+
+.palette-row{display:flex;gap:6px;padding:1rem 1rem 0;flex-wrap:wrap;align-items:center}
+.swatch{width:28px;height:28px;border-radius:6px;flex-shrink:0}
+.palette-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--color-text-tertiary);letter-spacing:0.05em}
+
+.phase-strip{display:flex;gap:6px;padding:1rem;overflow-x:auto;scrollbar-width:none;border-bottom:0.5px solid var(--color-border-tertiary)}
+.phase-strip::-webkit-scrollbar{display:none}
+.ph-btn{flex-shrink:0;padding:6px 14px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:transparent;font-size:11px;font-family:'Space Mono',monospace;color:var(--color-text-secondary);cursor:pointer;transition:all 0.18s;white-space:nowrap}
+.ph-btn:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
+.ph-btn.on{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+
+.content{padding:1.5rem 1rem 2rem}
+
+.phase-block{display:none}
+.phase-block.on{display:block}
+
+.ph-title-row{display:flex;align-items:baseline;gap:10px;margin-bottom:1.5rem}
+.ph-num{font-family:'Space Mono',monospace;font-size:10px;color:var(--color-text-tertiary);letter-spacing:0.1em}
+.ph-title{font-size:20px;font-weight:700}
+
+.screens-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1.5rem;margin-bottom:2rem}
+
+.screen-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+.screen-label{font-size:12px;font-weight:600;color:var(--color-text-primary);text-align:center}
+.screen-sub{font-size:11px;color:var(--color-text-tertiary);text-align:center;margin-top:-6px;font-family:'Space Mono',monospace}
+
+.phone{width:190px;height:340px;border-radius:28px;background:#0a0a0f;border:2px solid #1a1a2e;position:relative;overflow:hidden;flex-shrink:0}
+.phone::before{content:'';position:absolute;top:10px;left:50%;transform:translateX(-50%);width:40px;height:4px;background:#1a1a2e;border-radius:2px;z-index:10}
+.phone-inner{position:absolute;inset:0;border-radius:26px;overflow:hidden}
+
+.changes-list{margin-bottom:2rem}
+.change-item{display:flex;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary);align-items:flex-start}
+.change-item:last-child{border-bottom:none}
+.ch-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.ch-dot.critical{background:#ff3b5c}
+.ch-dot.major{background:#00d4ff}
+.ch-dot.polish{background:#a855f7}
+.ch-body{flex:1}
+.ch-tag{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.08em;color:var(--color-text-tertiary);margin-bottom:3px}
+.ch-name{font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:2px}
+.ch-desc{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+
+.legend{display:flex;gap:16px;padding:0 0 1rem;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--color-text-secondary)}
+.leg-dot{width:8px;height:8px;border-radius:50%}
+
+.flutter-block{background:var(--color-background-secondary);border-radius:12px;padding:1rem;margin-bottom:1.5rem}
+.flutter-title{font-size:12px;font-weight:600;margin-bottom:10px;color:var(--color-text-primary)}
+.code-snippet{font-family:'Space Mono',monospace;font-size:10px;color:var(--color-text-secondary);line-height:1.7;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:8px;padding:10px;margin-top:8px;white-space:pre}
+
+.anim-note{font-size:11px;font-family:'Space Mono',monospace;color:var(--color-text-tertiary);text-align:center;margin-top:6px}
+
+@keyframes radarSweep{to{transform:rotate(360deg)}}
+@keyframes blipPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.6;transform:scale(1.3)}}
+@keyframes compassSpin{0%{transform:rotate(-20deg)}50%{transform:rotate(20deg)}100%{transform:rotate(-20deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes chatSlide{from{transform:translateX(100%)}to{transform:translateX(20%)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,255,136,0)}50%{box-shadow:0 0 12px 2px rgba(0,255,136,0.3)}}
+@keyframes scanLine{0%{top:20px}100%{top:300px}}
+</style>
+
+<div class="wrap">
+<div class="hero">
+  <div class="hero-label">UI/UX Transformation Plan · 8 Phases · 40+ Changes</div>
+  <div class="hero-h">From boring to cinematic</div>
+  <div class="hero-sub">Every screen redesigned for the radar aesthetic — dark, neon, alive</div>
+</div>
+
+<div class="palette-row">
+  <span class="palette-label">Design tokens —</span>
+  <div class="swatch" style="background:#0a0a0f" title="#0a0a0f bg-primary"></div>
+  <div class="swatch" style="background:#111120" title="bg-surface"></div>
+  <div class="swatch" style="background:#00FF88" title="neon-green accent"></div>
+  <div class="swatch" style="background:#00D4FF" title="electric-blue secondary"></div>
+  <div class="swatch" style="background:#ff3b5c" title="danger/leave red"></div>
+  <div class="swatch" style="background:#a855f7" title="purple tertiary"></div>
+  <div class="swatch" style="background:#FFB347" title="amber distance"></div>
+  <div class="swatch" style="background:#1a1a2e" title="border/grid"></div>
+  <div class="swatch" style="background:#ffffff;border:0.5px solid #ccc" title="white text"></div>
+</div>
+
+<div class="phase-strip" id="phStrip"></div>
+
+<div class="content" id="phContent"></div>
+</div>
+
+<script>
+const C = {
+  bg:'#0a0a0f', surf:'#111120', surf2:'#161628',
+  green:'#00FF88', blue:'#00D4FF', red:'#ff3b5c',
+  purple:'#a855f7', amber:'#FFB347', border:'#1a1a2e',
+  border2:'rgba(0,255,136,0.2)', white:'#ffffff',
+  gray:'#888', gray2:'#555', textDim:'rgba(255,255,255,0.35)'
+};
+
+function px(el, styles){Object.assign(el.style, styles); return el}
+function mk(tag,styles={},text=''){
+  const el=document.createElement(tag);
+  if(styles) Object.assign(el.style,styles);
+  if(text) el.textContent=text;
+  return el;
+}
+
+function phone(contentFn, w=190, h=340){
+  const wrap = document.createElement('div');
+  wrap.className='phone';
+  wrap.style.width=w+'px';
+  wrap.style.height=h+'px';
+  const inner=document.createElement('div');
+  inner.className='phone-inner';
+  contentFn(inner);
+  wrap.appendChild(inner);
+  return wrap;
+}
+
+const phases = [
+  {id:'tokens', label:'01 · Tokens', title:'Design System & Tokens'},
+  {id:'entry', label:'02 · Entry', title:'Entry & Landing Screen'},
+  {id:'setup', label:'03 · Setup', title:'Session Setup & Waiting Room'},
+  {id:'radar', label:'04 · Radar', title:'Main Radar View'},
+  {id:'compass', label:'05 · Compass', title:'Compass Tracking View'},
+  {id:'chat', label:'06 · Chat', title:'Chat Overlay'},
+  {id:'privacy', label:'07 · Privacy', title:'Privacy & Settings Sheet'},
+  {id:'motion', label:'08 · Motion', title:'Motion & Micro-interactions'},
+];
+
+function renderTokens(c){
+  c.innerHTML=`
+  <div class="ph-title-row"><span class="ph-num">PHASE 01</span><span class="ph-title">Design system & tokens</span></div>
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#ff3b5c"></div>Critical missing</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#00d4ff"></div>Major upgrade</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#a855f7"></div>Polish</div>
+  </div>
+  <div class="changes-list">
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · COLORS</div><div class="ch-name">Replace ThemeData defaults with radar tokens</div><div class="ch-desc">AppColors: bgPrimary=#0a0a0f, bgSurface=#111120, accentGreen=#00FF88, accentBlue=#00D4FF, danger=#ff3b5c, textPrimary=#ffffff, textDim=rgba(255,255,255,0.5). Zero Material defaults in feature code.</div></div></div>
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · TYPOGRAPHY</div><div class="ch-name">Space Grotesk + Space Mono font pairing</div><div class="ch-desc">google_fonts package. Display + headings = Space Grotesk 700. Body = Space Grotesk 400. Codes/IDs/distances = Space Mono 400. Kills generic system font look instantly.</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · BORDERS</div><div class="ch-name">Replace solid borders with neon glow rings</div><div class="ch-desc">Active elements: BoxDecoration border = Border.all(color: accentGreen.withOpacity(0.4), width: 1). Inactive: border = Border.all(color: white.withOpacity(0.08), width: 0.5). Never use Material divider or grey borders.</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · SPACING</div><div class="ch-name">Generous spacing system — never cramped</div><div class="ch-desc">AppSpacing: xs=4, sm=8, md=16, lg=24, xl=40, xxl=64. Radar view: minimum 40px edge padding. Touch targets: minimum 52px (not 44px) — festival users have gloves and shaky hands.</div></div></div>
+    <div class="change-item"><div class="ch-dot polish"></div><div class="ch-body"><div class="ch-tag">POLISH · RADIUS</div><div class="ch-name">Consistent radii — nothing sharp in a radar app</div><div class="ch-desc">Cards: 20px. Buttons: 14px. Chips/pills: 100px (full pill). Bottom sheets: top corners 28px. Blips on radar: perfect circle. Input fields: 12px. Zero rectangular elements.</div></div></div>
+  </div>
+  <div class="flutter-block">
+    <div class="flutter-title">Implementation: lib/core/design/app_colors.dart</div>
+    <div class="code-snippet">class AppColors {
+  static const bg       = Color(0xFF0A0A0F);
+  static const surface  = Color(0xFF111120);
+  static const surface2 = Color(0xFF161628);
+  static const green    = Color(0xFF00FF88);
+  static const blue     = Color(0xFF00D4FF);
+  static const danger   = Color(0xFFFF3B5C);
+  static const purple   = Color(0xFFA855F7);
+  static const amber    = Color(0xFFFFB347);
+  static const white    = Color(0xFFFFFFFF);
+  static const grid     = Color(0xFF1A1A2E);
+  static const textDim  = Color(0x80FFFFFF);
+}</div>
+  </div>`;
+}
+
+function renderEntry(c){
+  const p1 = phone(inner=>{
+    inner.style.cssText=`background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 20px;gap:0`;
+    inner.innerHTML=`
+      <div style="width:90px;height:90px;border-radius:50%;border:2px solid rgba(0,255,136,0.3);display:flex;align-items:center;justify-content:center;margin-bottom:24px;position:relative">
+        <svg width="50" height="50" viewBox="0 0 50 50">
+          <circle cx="25" cy="25" r="20" fill="none" stroke="rgba(0,255,136,0.15)" stroke-width="1"/>
+          <circle cx="25" cy="25" r="12" fill="none" stroke="rgba(0,255,136,0.25)" stroke-width="1"/>
+          <circle cx="25" cy="25" r="4" fill="#00FF88"/>
+          <line x1="25" y1="5" x2="25" y2="25" stroke="#00FF88" stroke-width="1.5" stroke-linecap="round" transform-origin="25 25" style="animation:radarSweep 3s linear infinite"/>
+        </svg>
+        <div style="position:absolute;inset:-8px;border-radius:50%;border:1px solid rgba(0,255,136,0.1);animation:glowPulse 2s ease-in-out infinite"></div>
+      </div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;letter-spacing:0.2em;color:rgba(255,255,255,0.35);margin-bottom:6px">FIND YOUR CREW</div>
+      <div style="font-size:22px;font-weight:700;color:#fff;text-align:center;line-height:1.1;margin-bottom:4px">Radar</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);text-align:center;margin-bottom:36px">ephemeral. private. live.</div>
+      <div style="width:100%;background:#00FF88;border-radius:14px;padding:14px 0;text-align:center;margin-bottom:10px;cursor:pointer;animation:glowPulse 2.5s ease-in-out infinite">
+        <span style="font-size:14px;font-weight:700;color:#0a0a0f;font-family:'Space Grotesk',sans-serif">Create a Radar</span>
+      </div>
+      <div style="width:100%;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:14px;padding:14px 0;text-align:center;cursor:pointer">
+        <span style="font-size:14px;font-weight:500;color:rgba(255,255,255,0.8);font-family:'Space Grotesk',sans-serif">Scan to Join</span>
+      </div>
+    `;
+  });
+
+  const p2 = phone(inner=>{
+    inner.style.cssText=`background:#0a0a0f;display:flex;flex-direction:column;padding:20px 16px 16px;gap:0`;
+    inner.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding-top:14px">
+        <span style="font-size:10px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.35);letter-spacing:0.08em">SESSION SETUP</span>
+        <div style="width:6px;height:6px;border-radius:50%;background:#00FF88"></div>
+      </div>
+      <div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:20px">Name your radar</div>
+      <div style="background:rgba(255,255,255,0.05);border:0.5px solid rgba(0,255,136,0.3);border-radius:12px;padding:12px 14px;margin-bottom:16px">
+        <div style="font-size:9px;font-family:'Space Mono',monospace;color:rgba(0,255,136,0.7);margin-bottom:4px">SESSION NAME</div>
+        <div style="font-size:15px;font-weight:600;color:#fff">Neon Fox Squad</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:14px;background:rgba(255,255,255,0.04);border-radius:12px;margin-bottom:20px">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#fff">Group chat</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.4)">Members can message</div>
+        </div>
+        <div style="width:44px;height:26px;background:#00FF88;border-radius:13px;position:relative">
+          <div style="position:absolute;right:3px;top:3px;width:20px;height:20px;background:#0a0a0f;border-radius:50%"></div>
+        </div>
+      </div>
+      <div style="width:100%;background:#00FF88;border-radius:14px;padding:14px 0;text-align:center;margin-top:auto">
+        <span style="font-size:14px;font-weight:700;color:#0a0a0f">Generate QR →</span>
+      </div>
+    `;
+  });
+
+  c.innerHTML='';
+  c.insertAdjacentHTML('beforeend',`<div class="ph-title-row"><span class="ph-num">PHASE 02</span><span class="ph-title">Entry & landing screen</span></div>`);
+
+  const grid = document.createElement('div');
+  grid.className='screens-grid';
+
+  const w1=document.createElement('div'); w1.className='screen-wrap';
+  const l1=document.createElement('div'); l1.className='screen-label'; l1.textContent='Landing screen';
+  const s1=document.createElement('div'); s1.className='screen-sub'; s1.textContent='hero animation + 2 CTAs';
+  w1.appendChild(l1); w1.appendChild(p1); w1.appendChild(s1);
+
+  const w2=document.createElement('div'); w2.className='screen-wrap';
+  const l2=document.createElement('div'); l2.className='screen-label'; l2.textContent='Session setup';
+  const s2=document.createElement('div'); s2.className='screen-sub'; s2.textContent='admin config flow';
+  w2.appendChild(l2); w2.appendChild(p2); w2.appendChild(s2);
+
+  grid.appendChild(w1); grid.appendChild(w2);
+  c.appendChild(grid);
+
+  c.insertAdjacentHTML('beforeend',`
+  <div class="changes-list">
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · HERO</div><div class="ch-name">Animated radar hero — not a flat logo</div><div class="ch-desc">Lottie animation or custom Flutter CustomPaint: rotating radar sweep line, concentric rings pulsing outward. Animation starts immediately on cold launch. Uses AppAnimations.radarIdle controller in RepaintBoundary.</div></div></div>
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · CTA HIERARCHY</div><div class="ch-name">Two-button hierarchy — primary fills, secondary glass</div><div class="ch-desc">Create a Radar: solid #00FF88, text color bg. Scan to Join: glassmorphism — rgba(255,255,255,0.06) bg + 0.5px white border. Never two equal-weight buttons.</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · BG</div><div class="ch-name">Background: not flat black — subtle radial depth</div><div class="ch-desc">Entry screen bg: Stack with CustomPaint drawing faint concentric rings (stroke 0.5px, opacity 0.04) centered on radar hero position. Creates depth without performance cost. Pure CSS-equivalent: radial-gradient simulation via canvas.</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · SETUP SHEET</div><div class="ch-name">Session name field: glowing active state, not flat input</div><div class="ch-desc">InputDecoration: focusedBorder = OutlineInputBorder with neon green, enabledBorder semi-transparent. Auto-generated name renders in larger font to look like a display, not a form. Tap to edit inline.</div></div></div>
+    <div class="change-item"><div class="ch-dot polish"></div><div class="ch-body"><div class="ch-tag">POLISH · MICRO</div><div class="ch-name">Staggered entrance animation on landing</div><div class="ch-desc">FadeTransition + SlideTransition staggered: ring appears (0ms) → radar icon (150ms) → tagline (300ms) → buttons (450ms). AnimationController with interval. One-time on first open.</div></div></div>
+  </div>`);
+}
+
+function renderSetup(c){
+  const pWait = phone(inner=>{
+    inner.style.cssText=`background:#0a0a0f;display:flex;flex-direction:column;align-items:center;padding:16px;gap:0`;
+    inner.innerHTML=`
+      <div style="padding-top:14px;margin-bottom:16px;width:100%;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:11px;font-weight:600;color:#fff">Neon Fox Squad</div>
+        <div style="font-size:9px;font-family:'Space Mono',monospace;color:rgba(0,255,136,0.7)">4 joined</div>
+      </div>
+      <div style="width:130px;height:130px;background:#fff;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;border:2px solid rgba(0,255,136,0.4);animation:glowPulse 2s ease-in-out infinite">
+        <svg width="100" height="100" viewBox="0 0 100 100">
+          <rect width="100" height="100" fill="white"/>
+          <rect x="10" y="10" width="20" height="20" fill="#0a0a0f"/>
+          <rect x="15" y="15" width="10" height="10" fill="white"/>
+          <rect x="70" y="10" width="20" height="20" fill="#0a0a0f"/>
+          <rect x="75" y="15" width="10" height="10" fill="white"/>
+          <rect x="10" y="70" width="20" height="20" fill="#0a0a0f"/>
+          <rect x="15" y="75" width="10" height="10" fill="white"/>
+          <rect x="40" y="10" width="5" height="5" fill="#0a0a0f"/>
+          <rect x="50" y="10" width="5" height="5" fill="#0a0a0f"/>
+          <rect x="45" y="20" width="10" height="5" fill="#0a0a0f"/>
+          <rect x="40" y="30" width="5" height="5" fill="#0a0a0f"/>
+          <rect x="10" y="40" width="15" height="5" fill="#0a0a0f"/>
+          <rect x="30" y="45" width="10" height="5" fill="#0a0a0f"/>
+          <rect x="50" y="40" width="5" height="15" fill="#0a0a0f"/>
+          <rect x="60" y="30" width="10" height="5" fill="#0a0a0f"/>
+          <rect x="70" y="40" width="20" height="5" fill="#0a0a0f"/>
+          <rect x="40" y="50" width="5" height="20" fill="#0a0a0f"/>
+          <rect x="50" y="60" width="15" height="5" fill="#0a0a0f"/>
+          <rect x="60" y="70" width="5" height="20" fill="#0a0a0f"/>
+          <rect x="70" y="75" width="20" height="5" fill="#0a0a0f"/>
+          <rect x="80" y="80" width="10" height="10" fill="#0a0a0f"/>
+        </svg>
+      </div>
+      <div style="font-size:9px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.3);margin-bottom:10px">radarapp.io/join?s=sess_9a8b&p=8f2k9x</div>
+      <div style="width:100%;background:rgba(0,212,255,0.1);border:0.5px solid rgba(0,212,255,0.3);border-radius:10px;padding:8px;margin-bottom:14px">
+        <div style="font-size:9px;font-family:'Space Mono',monospace;color:rgba(0,212,255,0.7);margin-bottom:6px">WHO'S HERE (4)</div>
+        <div style="display:flex;gap:6px">
+          ${['S','R','A','K'].map((l,i)=>`<div style="width:28px;height:28px;border-radius:50%;background:${['#00FF88','#00D4FF','#a855f7','#FFB347'][i]};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#0a0a0f">${l}</div>`).join('')}
+        </div>
+      </div>
+      <div style="width:100%;background:#00FF88;border-radius:12px;padding:12px;text-align:center">
+        <span style="font-size:13px;font-weight:700;color:#0a0a0f">Launch Radar →</span>
+      </div>`;
+  });
+
+  const pGuest = phone(inner=>{
+    inner.style.cssText=`background:#0a0a0f;display:flex;flex-direction:column;padding:20px 16px;gap:0`;
+    inner.innerHTML=`
+      <div style="padding-top:14px;font-size:18px;font-weight:700;color:#fff;margin-bottom:4px">Join as yourself</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:24px">Neon Fox Squad · Host: Sreejith</div>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:24px">
+        <div style="width:52px;height:52px;border-radius:50%;background:#00FF88;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#0a0a0f;border:2px solid rgba(0,255,136,0.4)">A</div>
+        <div>
+          <div style="font-size:16px;font-weight:700;color:#fff">Arjun</div>
+          <div style="font-size:10px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.35)">tap to edit for this session</div>
+        </div>
+      </div>
+      <div style="font-size:10px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.3);margin-bottom:10px">YOUR VISIBILITY</div>
+      <div style="display:flex;gap:6px;margin-bottom:24px">
+        ${['Direction','+ Distance','Full map'].map((t,i)=>`<div style="flex:1;padding:8px 4px;text-align:center;border-radius:10px;border:0.5px solid ${i===1?'rgba(0,255,136,0.5)':'rgba(255,255,255,0.1)'};background:${i===1?'rgba(0,255,136,0.1)':'transparent'}"><div style="font-size:9px;font-weight:600;color:${i===1?'#00FF88':'rgba(255,255,255,0.4)'}">${t}</div></div>`).join('')}
+      </div>
+      <div style="margin-top:auto;text-align:center;color:rgba(255,255,255,0.35);font-size:11px;margin-bottom:12px">Waiting for host to launch...</div>
+      <div style="display:flex;gap:3px;justify-content:center;margin-bottom:4px">
+        ${[0,1,2].map(i=>`<div style="width:6px;height:6px;border-radius:50%;background:${i===0?'#00FF88':'rgba(255,255,255,0.15)'};animation:blipPulse ${1+i*0.3}s ease-in-out infinite"></div>`).join('')}
+      </div>
+    `;
+  });
+
+  c.innerHTML='';
+  c.insertAdjacentHTML('beforeend',`<div class="ph-title-row"><span class="ph-num">PHASE 03</span><span class="ph-title">Session setup & waiting room</span></div>`);
+  const grid=document.createElement('div'); grid.className='screens-grid';
+  const w1=document.createElement('div'); w1.className='screen-wrap';
+  w1.innerHTML='<div class="screen-label">Waiting room — admin</div>';
+  w1.appendChild(pWait);
+  w1.insertAdjacentHTML('beforeend','<div class="screen-sub">QR + live roster</div>');
+  const w2=document.createElement('div'); w2.className='screen-wrap';
+  w2.innerHTML='<div class="screen-label">Waiting room — guest</div>';
+  w2.appendChild(pGuest);
+  w2.insertAdjacentHTML('beforeend','<div class="screen-sub">identity + privacy pre-set</div>');
+  grid.appendChild(w1); grid.appendChild(w2); c.appendChild(grid);
+
+  c.insertAdjacentHTML('beforeend',`
+  <div class="changes-list">
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · QR</div><div class="ch-name">QR code: glowing card, not plain square</div><div class="ch-desc">QR wrapped in Container with neon green BoxShadow (blurRadius:20, color:green.withOpacity(0.3)). White QR on #0a0a0f bg inside rounded rect. Pulse animation on the outer ring to draw attention.</div></div></div>
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · ROSTER</div><div class="ch-name">Live member list: avatar blips with staggered entrance</div><div class="ch-desc">Each new member animates in with ScaleTransition (0→1, 200ms, elasticOut). Color-coded avatars (8 distinct neon colors cycling). Overflow: "+3 more" chip. AnimatedList for smooth add/remove.</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · JOIN SHEET</div><div class="ch-name">Privacy pre-set in waiting room — not after join</div><div class="ch-desc">Guest sees segmented privacy selector before entering radar. Segmented control: custom SegmentedButton widget with sliding indicator animation (AnimatedPositioned). Selected state: green tint + green text.</div></div></div>
+  </div>`);
+}
+
+function renderRadar(c){
+  const pRadar = phone(inner=>{
+    inner.style.cssText=`background:#0a0a0f;position:relative;overflow:hidden`;
+    inner.innerHTML=`
+      <div style="position:absolute;top:0;left:0;right:0;padding:20px 16px 10px;display:flex;justify-content:space-between;align-items:center;z-index:5">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#fff">Neon Fox Squad</div>
+          <div style="font-size:9px;font-family:'Space Mono',monospace;color:rgba(0,255,136,0.7)">5 active</div>
+        </div>
+        <div style="width:32px;height:32px;border-radius:50%;background:rgba(255,59,92,0.15);border:0.5px solid rgba(255,59,92,0.4);display:flex;align-items:center;justify-content:center">
+          <div style="width:10px;height:10px;border:1.5px solid #ff3b5c;border-radius:2px;position:relative">
+            <div style="position:absolute;top:-4px;left:1px;width:3px;height:4px;background:#ff3b5c;border-radius:1px"></div>
+            <div style="position:absolute;top:-4px;right:1px;width:3px;height:4px;background:#ff3b5c;border-radius:1px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);margin-top:-20px">
+        <svg width="180" height="180" viewBox="0 0 180 180" style="overflow:visible">
+          <circle cx="90" cy="90" r="80" fill="none" stroke="rgba(0,255,136,0.08)" stroke-width="1"/>
+          <circle cx="90" cy="90" r="55" fill="none" stroke="rgba(0,255,136,0.06)" stroke-width="1"/>
+          <circle cx="90" cy="90" r="30" fill="none" stroke="rgba(0,255,136,0.1)" stroke-width="0.5"/>
+          <line x1="90" y1="10" x2="90" y2="170" stroke="rgba(0,255,136,0.04)" stroke-width="0.5"/>
+          <line x1="10" y1="90" x2="170" y2="90" stroke="rgba(0,255,136,0.04)" stroke-width="0.5"/>
+          <g style="transform-origin:90px 90px;animation:radarSweep 4s linear infinite">
+            <path d="M90 90 L90 10" stroke="rgba(0,255,136,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M90 90 L90 10 A80 80 0 0 1 110 14 Z" fill="rgba(0,255,136,0.06)"/>
+          </g>
+          <circle cx="90" cy="90" r="5" fill="#00FF88"/>
+          <circle cx="90" cy="90" r="3" fill="#0a0a0f"/>
+          <g>
+            <circle cx="130" cy="60" r="9" fill="rgba(0,212,255,0.2)" stroke="#00D4FF" stroke-width="1"/>
+            <text x="130" y="63.5" text-anchor="middle" font-size="8" font-weight="700" fill="#00D4FF" font-family="Space Grotesk,sans-serif">S</text>
+          </g>
+          <g style="animation:blipPulse 2.2s ease-in-out infinite">
+            <circle cx="58" cy="110" r="9" fill="rgba(168,85,247,0.2)" stroke="#a855f7" stroke-width="1"/>
+            <text x="58" y="113.5" text-anchor="middle" font-size="8" font-weight="700" fill="#a855f7" font-family="Space Grotesk,sans-serif">R</text>
+          </g>
+          <g>
+            <circle cx="110" cy="130" r="9" fill="rgba(255,179,71,0.2)" stroke="#FFB347" stroke-width="1"/>
+            <text x="110" y="133.5" text-anchor="middle" font-size="8" font-weight="700" fill="#FFB347" font-family="Space Grotesk,sans-serif">K</text>
+          </g>
+          <g style="animation:blipPulse 1.8s ease-in-out infinite 0.5s">
+            <circle cx="50" cy="55" r="9" fill="rgba(0,255,136,0.2)" stroke="#00FF88" stroke-width="1"/>
+            <text x="50" y="58.5" text-anchor="middle" font-size="8" font-weight="700" fill="#00FF88" font-family="Space Grotesk,sans-serif">A</text>
+          </g>
+        </svg>
+      </div>
+
+      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(17,17,32,0.98));border-radius:20px 20px 0 0;padding:12px 16px 16px">
+        <div style="width:32px;height:3px;background:rgba(255,255,255,0.2);border-radius:2px;margin:0 auto 10px"></div>
+        <div style="display:flex;gap:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px">
+          ${[['S','#00D4FF'],['R','#a855f7'],['K','#FFB347'],['A','#00FF88']].map(([l,col])=>`
+          <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div style="width:36px;height:36px;border-radius:50%;background:${col}22;border:1.5px solid ${col};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${col};font-family:'Space Grotesk',sans-serif">${l}</div>
+            <div style="font-size:8px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.4)">45m</div>
+          </div>`).join('')}
+        </div>
+      </div>
+
+      <div style="position:absolute;bottom:88px;right:16px;width:40px;height:40px;border-radius:50%;background:rgba(0,212,255,0.15);border:0.5px solid rgba(0,212,255,0.4);display:flex;align-items:center;justify-content:center">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M2 5h12M2 8h8M2 11h5" stroke="#00D4FF" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="13" cy="10" r="2" fill="#ff3b5c"/>
+        </svg>
+      </div>
+    `;
+  });
+
+  c.innerHTML='';
+  c.insertAdjacentHTML('beforeend',`<div class="ph-title-row"><span class="ph-num">PHASE 04</span><span class="ph-title">Main radar view</span></div>`);
+  const grid=document.createElement('div'); grid.className='screens-grid';
+  const w1=document.createElement('div'); w1.className='screen-wrap';
+  w1.innerHTML='<div class="screen-label">Radar canvas — live</div>';
+  w1.appendChild(pRadar);
+  w1.insertAdjacentHTML('beforeend','<div class="screen-sub">sweep · blips · bottom sheet</div>');
+  grid.appendChild(w1); c.appendChild(grid);
+
+  c.insertAdjacentHTML('beforeend',`
+  <div class="changes-list">
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · CANVAS</div><div class="ch-name">CustomPaint radar: proper sweep, not a widget grid</div><div class="ch-desc">RadarPainter extends CustomPainter. Draws: concentric rings (opacity 0.08/0.06/0.04), crosshair lines (0.04), sweep line (AnimationController 0→2π, 4s), sweep trail arc (path, gradient opacity 0.06→0). Canvas.drawArc, no Flutter widgets inside.</div></div></div>
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · BLIPS</div><div class="ch-name">Avatar blips: colored rings, not generic dots</div><div class="ch-desc">Each blip: outer glow ring (stroke, user color, opacity 0.3) + filled circle (user color 0.15 opacity) + initials text. Tap → ScaleTransition bounce (1→1.3→1, 150ms) then navigate to Compass. Idle animation: subtle scale 1→1.15 loop (only for nearby blips).</div></div></div>
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · BOTTOM SHEET</div><div class="ch-name">Bottom sheet peek state: glass-morphism, not opaque card</div><div class="ch-desc">DraggableScrollableSheet: min 0.18, max 0.6. Background: gradient from transparent to rgba(17,17,32,0.95). Drag handle: 32px wide pill, rgba(255,255,255,0.2). Avatar row: horizontally scrollable with distance labels below in Space Mono. Expand reveals member detail list.</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · TOPBAR</div><div class="ch-name">Top bar: transparent, not filled — floats over radar</div><div class="ch-desc">Stack positioning, no AppBar widget. Session name + active count left-aligned. Danger zone (leave/end) right-aligned as icon-only with colored glow. SafeArea padding from top.</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · OFFLINE BLIP</div><div class="ch-name">"Gone off the grid" animation sequence</div><div class="ch-desc">1) Avatar turns gray (AnimatedContainer color transition, 300ms). 2) Frozen 2s. 3) AnimatedOpacity 1→0 over 800ms. 4) ScaleTransition 1→0 simultaneously. 5) Top snackbar: slide down dark pill "Sreejith has gone off the grid." with fade auto-dismiss at 3s.</div></div></div>
+  </div>`);
+}
+
+function renderCompass(c){
+  const pCompass = phone(inner=>{
+    inner.style.cssText=`background:#0a0a0f;display:flex;flex-direction:column;align-items:center;padding:16px;position:relative;overflow:hidden`;
+    inner.innerHTML=`
+      <div style="position:absolute;top:0;left:0;right:0;padding:20px 16px 0;display:flex;justify-content:space-between;align-items:center;z-index:5">
+        <button style="background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 14px;color:rgba(255,255,255,0.7);font-size:11px;font-family:'Space Grotesk',sans-serif;cursor:pointer">← Back</button>
+        <div style="font-size:9px;font-family:'Space Mono',monospace;color:rgba(0,255,136,0.7)">GPS HIGH</div>
+      </div>
+      <div style="margin-top:60px;text-align:center;margin-bottom:8px">
+        <div style="font-size:22px;font-weight:700;color:#fff">Sreejith</div>
+        <div style="font-size:13px;font-family:'Space Mono',monospace;color:#FFB347;margin-top:2px">45 m away</div>
+      </div>
+      <div style="position:relative;width:160px;height:160px;margin:16px 0">
+        <div style="position:absolute;inset:0;border-radius:50%;border:1px solid rgba(0,212,255,0.2)"></div>
+        <div style="position:absolute;inset:12px;border-radius:50%;border:0.5px solid rgba(0,212,255,0.1)"></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+          <svg width="80" height="120" viewBox="0 0 80 120" style="animation:compassSpin 3s ease-in-out infinite">
+            <defs>
+              <linearGradient id="arrGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#00D4FF"/>
+                <stop offset="100%" stop-color="#00D4FF" stop-opacity="0.3"/>
+              </linearGradient>
+            </defs>
+            <polygon points="40,4 52,58 40,50 28,58" fill="url(#arrGrad)"/>
+            <polygon points="40,116 52,62 40,70 28,62" fill="rgba(255,255,255,0.1)"/>
+            <circle cx="40" cy="60" r="6" fill="#00D4FF"/>
+            <circle cx="40" cy="60" r="3" fill="#0a0a0f"/>
+          </svg>
+        </div>
+        <div style="position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:9px;font-family:'Space Mono',monospace;color:rgba(0,212,255,0.5)">N</div>
+        <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:9px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.2)">S</div>
+        <div style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:9px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.2)">E</div>
+        <div style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:9px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.2)">W</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:24px">
+        <div style="width:6px;height:6px;border-radius:50%;background:#00FF88"></div>
+        <div style="font-size:10px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.4)">NE · 47°</div>
+      </div>
+      <div style="width:100%;background:rgba(0,212,255,0.1);border:0.5px solid rgba(0,212,255,0.3);border-radius:14px;padding:14px;display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:#00D4FF22;border:1.5px solid #00D4FF;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#00D4FF;font-family:'Space Grotesk',sans-serif">S</div>
+          <div>
+            <div style="font-size:12px;font-weight:600;color:#fff">Message Sreejith</div>
+            <div style="font-size:9px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.35)">open direct message</div>
+          </div>
+        </div>
+        <div style="font-size:16px;color:#00D4FF">→</div>
+      </div>
+    `;
+  });
+
+  c.innerHTML='';
+  c.insertAdjacentHTML('beforeend',`<div class="ph-title-row"><span class="ph-num">PHASE 05</span><span class="ph-title">Compass tracking view</span></div>`);
+  const grid=document.createElement('div'); grid.className='screens-grid';
+  const w1=document.createElement('div'); w1.className='screen-wrap';
+  w1.innerHTML='<div class="screen-label">Compass view — tracking</div>';
+  w1.appendChild(pCompass);
+  w1.insertAdjacentHTML('beforeend','<div class="screen-sub">arrow · bearing · DM action</div>');
+  grid.appendChild(w1); c.appendChild(grid);
+
+  c.insertAdjacentHTML('beforeend',`
+  <div class="changes-list">
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · ARROW</div><div class="ch-name">Compass arrow: custom SVG path, not an icon</div><div class="ch-desc">Custom CompassArrow widget using CustomPaint. Shape: elongated teardrop/chevron pointing up. North half: LinearGradient electric blue tip→body. South half: rgba(255,255,255,0.08). Center hub: filled circle with hollow core. Rotation via Transform.rotate with lerped angle value.</div></div></div>
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · LERP</div><div class="ch-name">Arrow movement: buttery 300ms lerp, never snap</div><div class="ch-desc">TweenAnimationBuilder<double> with shortest-path angle (modulo 360). Curve: Curves.easeOutCubic. On new bearing: update target, animation auto-completes remaining delta. Never reset animation on each update — causes visible stutter.</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · RING</div><div class="ch-name">Compass ring: directional tick marks + cardinal labels</div><div class="ch-desc">CustomPaint ring: 72 tick marks (major at 45°, minor at 5°). Cardinal labels N/S/E/W in Space Mono 9px. Ring itself rotates inverse to device heading — labels always world-aligned. Subtle double-ring border at different opacities for depth.</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · PROXIMITY</div><div class="ch-name">Proximity haptic + visual pulse at 20m</div><div class="ch-desc">When distance crosses 20m: HapticFeedback.mediumImpact() + ring pulses outward (ScaleTransition 1→1.4, opacity 1→0, 600ms, 2 pulses). "Look up! Sreejith is close" snackbar from top. Only fires once per 30s.</div></div></div>
+  </div>`);
+}
+
+function renderChat(c){
+  const pChat = phone(inner=>{
+    inner.style.cssText=`background:#0a0a0f;position:relative;overflow:hidden`;
+    inner.innerHTML=`
+      <div style="position:absolute;inset:0;display:flex">
+        <div style="width:20%;background:#0a0a0f;display:flex;align-items:center;justify-content:center;opacity:0.5">
+          <div style="width:40px;height:40px;border-radius:50%;border:1px solid rgba(0,255,136,0.3)"></div>
+        </div>
+        <div style="flex:1;background:#111120;border-radius:20px 0 0 20px;display:flex;flex-direction:column;padding:16px 14px;animation:chatSlide 0.5s ease-out forwards">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;padding-top:8px">
+            <div style="font-size:13px;font-weight:700;color:#fff">Group chat</div>
+            <div style="font-size:9px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.35)">swipe to close →</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:14px;border-bottom:0.5px solid rgba(255,255,255,0.08);padding-bottom:10px">
+            ${['Group','DMs'].map((t,i)=>`<div style="flex:1;text-align:center;padding:6px;border-radius:8px;background:${i===0?'rgba(0,255,136,0.1)':'transparent'};border:0.5px solid ${i===0?'rgba(0,255,136,0.3)':'transparent'}"><span style="font-size:11px;font-weight:600;color:${i===0?'#00FF88':'rgba(255,255,255,0.35)'}">${t}</span></div>`).join('')}
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:10px;overflow:hidden">
+            <div style="display:flex;justify-content:center">
+              <div style="background:rgba(0,255,136,0.08);border-radius:20px;padding:4px 10px;font-size:9px;font-family:'Space Mono',monospace;color:rgba(0,255,136,0.6)">Riya joined the radar</div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:4px">
+              <div style="font-size:9px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.35)">Sreejith</div>
+              <div style="background:rgba(255,255,255,0.08);border-radius:14px 14px 14px 4px;padding:8px 12px;max-width:80%">
+                <div style="font-size:12px;color:#fff">I'm at the food court entrance</div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+              <div style="background:rgba(0,255,136,0.15);border:0.5px solid rgba(0,255,136,0.2);border-radius:14px 14px 4px 14px;padding:8px 12px;max-width:80%">
+                <div style="font-size:12px;color:#fff">omw, 45m out</div>
+              </div>
+              <div style="font-size:8px;font-family:'Space Mono',monospace;color:rgba(255,255,255,0.25)">sent</div>
+            </div>
+            <div style="display:flex;justify-content:center">
+              <div style="background:rgba(0,212,255,0.1);border:0.5px solid rgba(0,212,255,0.25);border-radius:12px;padding:8px 12px;max-width:90%">
+                <div style="font-size:9px;font-family:'Space Mono',monospace;color:rgba(0,212,255,0.7);margin-bottom:2px">PULSE PING</div>
+                <div style="font-size:11px;color:#00D4FF">Arjun is waiting at current location</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+            <input placeholder="message..." style="flex:1;background:rgba(255,255,255,0.05);border:0.5px solid rgba(255,255,255,0.12);border-radius:20px;padding:8px 12px;font-size:12px;color:rgba(255,255,255,0.7);font-family:'Space Grotesk',sans-serif;outline:none"/>
+            <div style="width:32px;height:32px;border-radius:50%;background:rgba(0,255,136,0.15);border:0.5px solid rgba(0,255,136,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;color:#00FF88;cursor:pointer">→</div>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  c.innerHTML='';
+  c.insertAdjacentHTML('beforeend',`<div class="ph-title-row"><span class="ph-num">PHASE 06</span><span class="ph-title">Chat overlay</span></div>`);
+  const grid=document.createElement('div'); grid.className='screens-grid';
+  const w1=document.createElement('div'); w1.className='screen-wrap';
+  w1.innerHTML='<div class="screen-label">Chat overlay — 80% wide</div>';
+  w1.appendChild(pChat);
+  w1.insertAdjacentHTML('beforeend','<div class="screen-sub">radar visible · slide gesture</div>');
+  grid.appendChild(w1); c.appendChild(grid);
+
+  c.insertAdjacentHTML('beforeend',`
+  <div class="changes-list">
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · SLIDE</div><div class="ch-name">Slide-in overlay: gesture-driven, not Navigator push</div><div class="ch-desc">AnimationController driven by HorizontalDragUpdate on GestureDetector. Overlay at x=20% to x=100% of screen width. DragEndDetails velocity threshold: > 400px/s = dismiss. SlideTransition(position: Tween(begin:Offset(1,0), end:Offset(0.2,0))). Radar visible but non-interactive behind.</div></div></div>
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · BUBBLES</div><div class="ch-name">Chat bubbles: own messages vs others visually distinct</div><div class="ch-desc">Own: green-tinted (rgba(0,255,136,0.15)) + green border, right-aligned. Others: surface2 bg, left-aligned, sender name in user's color above. System messages (join/leave): centered pill with icon. Pulse ping: distinct card style with PULSE PING label in blue.</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · INPUT</div><div class="ch-name">Input bar: pill shape with send FAB + pulse action</div><div class="ch-desc">Row: pill text field + circular send button. Long-press send button → shows Pulse Ping option (BottomSheet). Pulse ping renders as special chat card with user's location captured at time of send. Haptic on pulse send: HapticFeedback.heavyImpact().</div></div></div>
+  </div>`);
+}
+
+function renderPrivacy(c){
+  const pPrivacy = phone(inner=>{
+    inner.style.cssText=`background:#0a0a0f;display:flex;flex-direction:column;justify-content:flex-end;position:relative`;
+    inner.innerHTML=`
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.4)"></div>
+      <div style="position:relative;background:#111120;border-radius:24px 24px 0 0;padding:16px;z-index:1">
+        <div style="width:32px;height:3px;background:rgba(255,255,255,0.2);border-radius:2px;margin:0 auto 16px"></div>
+        <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:4px">Your visibility</div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:20px">Others see what you broadcast</div>
+        ${[
+          {t:'Direction only',d:'Arrow bearing, no distance',c:'#a855f7',active:false},
+          {t:'Direction + distance',d:'Arrow + how far you are',c:'#00FF88',active:true},
+          {t:'Full map',d:'Exact GPS on map',c:'#00D4FF',active:false},
+        ].map(o=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:${o.active?`rgba(0,255,136,0.07)`:'rgba(255,255,255,0.03)'};border:0.5px solid ${o.active?'rgba(0,255,136,0.3)':'rgba(255,255,255,0.06)'};margin-bottom:8px;cursor:pointer">
+          <div style="width:36px;height:36px;border-radius:50%;background:${o.c}22;border:1.5px solid ${o.active?o.c:o.c+'44'};display:flex;align-items:center;justify-content:center">
+            <div style="width:10px;height:10px;border-radius:50%;background:${o.active?o.c:'transparent'};border:1.5px solid ${o.c}"></div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:${o.active?'#fff':'rgba(255,255,255,0.5)'}">${o.t}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.3)">${o.d}</div>
+          </div>
+          ${o.active?`<div style="font-size:9px;font-family:'Space Mono',monospace;color:#00FF88">active</div>`:''}
+        </div>`).join('')}
+        <div style="height:1px;background:rgba(255,59,92,0.15);margin:14px 0"></div>
+        <div style="padding:12px;border-radius:14px;border:0.5px solid rgba(255,59,92,0.2);background:rgba(255,59,92,0.05);text-align:center;cursor:pointer">
+          <span style="font-size:13px;font-weight:600;color:#ff3b5c">Leave session</span>
+        </div>
+      </div>
+    `;
+  });
+
+  c.innerHTML='';
+  c.insertAdjacentHTML('beforeend',`<div class="ph-title-row"><span class="ph-num">PHASE 07</span><span class="ph-title">Privacy & settings sheet</span></div>`);
+  const grid=document.createElement('div'); grid.className='screens-grid';
+  const w1=document.createElement('div'); w1.className='screen-wrap';
+  w1.innerHTML='<div class="screen-label">Privacy sheet — modal</div>';
+  w1.appendChild(pPrivacy);
+  w1.insertAdjacentHTML('beforeend','<div class="screen-sub">radio select + danger zone</div>');
+  grid.appendChild(w1); c.appendChild(grid);
+
+  c.insertAdjacentHTML('beforeend',`
+  <div class="changes-list">
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · SELECTOR</div><div class="ch-name">Replace segmented control with radio card list</div><div class="ch-desc">Three full-width radio cards. Each has icon-circle (color-coded), title, subtitle. Selected: green border + green tint bg + 'active' label. AnimatedContainer for smooth selection transition. Much more readable at festival brightness than 3-way segmented control.</div></div></div>
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · DANGER</div><div class="ch-name">Leave button: red zone with visual separation</div><div class="ch-desc">Separated by a subtle red divider line. Red-tinted card with danger border. Tap → shows confirmation BottomSheet (not AlertDialog): "Leave radar? Your blip disappears for everyone." with Cancel and Leave buttons. Leave fires HapticFeedback.heavyImpact().</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · INSTANT</div><div class="ch-name">Privacy selection: instant visual + WS propagation</div><div class="ch-desc">Tap card → immediately updates local UI (optimistic). Fires PRIVACY_UPDATE WS message. Other clients update within 100ms. No loading spinner. If WS fails: revert UI with shake animation + error snackbar.</div></div></div>
+  </div>`);
+}
+
+function renderMotion(c){
+  c.innerHTML=`
+  <div class="ph-title-row"><span class="ph-num">PHASE 08</span><span class="ph-title">Motion system & micro-interactions</span></div>
+  <div class="changes-list">
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · TRANSITIONS</div><div class="ch-name">Radar → Compass: Hero transition on blip avatar</div><div class="ch-desc">Hero tag: 'avatar-{user_id}'. Avatar blip on radar Hero-animates into the target info circle at top of CompassView. Simultaneously: radar canvas fades (FadeTransition) and compass canvas fades in. Duration: 400ms, Curves.easeInOutCubic. Never use MaterialPageRoute default slide.</div></div></div>
+    <div class="change-item"><div class="ch-dot critical"></div><div class="ch-body"><div class="ch-tag">CRITICAL · HAPTICS</div><div class="ch-name">Full haptic vocabulary — tactile feedback for every action</div><div class="ch-desc">light: tap blip on radar, select privacy option. medium: join session, send message. heavy: leave session, session ends. pattern (custom): proximity alert 20m — two pulses. Never haptic on: passive data updates, sweep animation.</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · ENTRANCE</div><div class="ch-name">Radar launch: blips animate in staggered</div><div class="ch-desc">On SESSION_LAUNCHED: radar canvas paints immediately. Each blip ScaleTransition from 0→1 with stagger delay = index × 80ms. ElasticOutCurve for a satisfying pop. Sweep animation starts simultaneously. Total duration: ~600ms. Feels like the radar is "coming online".</div></div></div>
+    <div class="change-item"><div class="ch-dot major"></div><div class="ch-body"><div class="ch-tag">MAJOR · EMPTY</div><div class="ch-name">Post-session screen: broken compass Lottie animation</div><div class="ch-desc">Full-screen: Lottie broken compass animation (commission or use LottieFiles). Text fades in after animation: "This radar has gone dark." in Space Mono. Single CTA: "Back to home" appears from bottom. No gratuitous UI — minimal, respectful of the session ending.</div></div></div>
+    <div class="change-item"><div class="ch-dot polish"></div><div class="ch-body"><div class="ch-tag">POLISH · LOADING</div><div class="ch-name">Replace CircularProgressIndicator with radar sweep loader</div><div class="ch-desc">Custom RadarLoader widget: miniature radar canvas (40×40) with sweep animation. Replaces all CircularProgressIndicator instances globally via ThemeData.progressIndicatorTheme override pointing to custom widget. Consistent with app aesthetic.</div></div></div>
+    <div class="change-item"><div class="ch-dot polish"></div><div class="ch-body"><div class="ch-tag">POLISH · SCROLL</div><div class="ch-name">Bottom sheet expand: parallax on radar canvas</div><div class="ch-desc">As DraggableScrollableSheet expands: radar canvas scales down (Transform.scale 1→0.85) and shifts up. Creates depth effect. Use NotificationListener<DraggableScrollableNotification> to drive scale value via AnimatedBuilder.</div></div></div>
+  </div>
+  <div class="flutter-block">
+    <div class="flutter-title">Animation architecture: lib/core/animations/app_animations.dart</div>
+    <div class="code-snippet">class AppAnimations {
+  static const radarSweep   = Duration(milliseconds: 4000);
+  static const blipEntrance = Duration(milliseconds: 300);
+  static const blipStagger  = Duration(milliseconds: 80);
+  static const compassLerp  = Duration(milliseconds: 300);
+  static const chatSlide    = Duration(milliseconds: 250);
+  static const sheetExpand  = Duration(milliseconds: 350);
+  static const blipFadeOut  = Duration(milliseconds: 800);
+  static const heroTransit  = Duration(milliseconds: 400);
+  static const pageTransit  = Duration(milliseconds: 350);
+
+  static const sweepCurve   = Curves.linear;
+  static const entranceCurve = Curves.elasticOut;
+  static const compassCurve  = Curves.easeOutCubic;
+  static const slideCurve    = Curves.easeOutCubic;
+}</div>
+  </div>`;
+}
+
+const renderers = {
+  tokens: renderTokens,
+  entry: renderEntry,
+  setup: renderSetup,
+  radar: renderRadar,
+  compass: renderCompass,
+  chat: renderChat,
+  privacy: renderPrivacy,
+  motion: renderMotion,
+};
+
+let active=0;
+
+function renderNav(){
+  const strip=document.getElementById('phStrip');
+  strip.innerHTML=phases.map((p,i)=>`<button class="ph-btn ${i===active?'on':''}" onclick="setPhase(${i})">${p.label}</button>`).join('');
+}
+
+function setPhase(i){
+  active=i;
+  renderNav();
+  const c=document.getElementById('phContent');
+  renderers[phases[i].id](c);
+}
+
+renderNav();
+renderers[phases[0].id](document.getElementById('phContent'));
+</script>

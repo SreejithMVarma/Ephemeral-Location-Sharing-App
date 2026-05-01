@@ -1,0 +1,20 @@
+mobile:
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/mobile/**
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - apps/backend/**
+
+infra:
+  - changed-files:
+      - any-glob-to-any-file:
+          - infra/**
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - docs/**
+          - README.md

@@ -1,0 +1,1288 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --radar-green: #00FF88;
+    --radar-green-dim: rgba(0,255,136,0.15);
+    --radar-green-glow: rgba(0,255,136,0.4);
+    --phase-colors: #00FF88, #00D4FF, #FF6B6B, #FFB347, #B47AFF, #FF69B4;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body-wrap {
+    display: block;
+    font-family: 'Syne', var(--font-sans), sans-serif;
+    color: var(--color-text-primary);
+    background: transparent;
+    padding: 1.5rem 0;
+  }
+
+  .rm-header {
+    text-align: center;
+    padding: 2rem 1rem 1.5rem;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    margin-bottom: 0;
+  }
+
+  .rm-title {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.15em;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .rm-h1 {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--color-text-primary);
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+
+  .rm-sub {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    font-weight: 400;
+  }
+
+  .phase-nav {
+    display: flex;
+    gap: 6px;
+    padding: 1rem;
+    overflow-x: auto;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    scrollbar-width: none;
+  }
+  .phase-nav::-webkit-scrollbar { display: none; }
+
+  .phase-btn {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 0.5px solid var(--color-border-secondary);
+    background: transparent;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .phase-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .phase-btn.active { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+
+  .steps-container {
+    padding: 0 1rem 2rem;
+  }
+
+  .phase-section { display: none; }
+  .phase-section.active { display: block; }
+
+  .phase-header {
+    padding: 1.5rem 0 1rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .phase-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    letter-spacing: 0.1em;
+    background: var(--color-background-secondary);
+    border: 0.5px solid var(--color-border-secondary);
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+  }
+
+  .phase-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+  }
+
+  .step-card {
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .step-card:hover { border-color: var(--color-border-secondary); }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+    background: var(--color-background-primary);
+  }
+
+  .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--color-text-tertiary);
+    min-width: 28px;
+    flex-shrink: 0;
+  }
+
+  .step-title-block { flex: 1; min-width: 0; }
+
+  .step-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    line-height: 1.3;
+  }
+
+  .step-obj {
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    margin-top: 2px;
+    font-weight: 400;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .step-tags {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 0.5px solid var(--color-border-tertiary);
+    color: var(--color-text-tertiary);
+    background: var(--color-background-secondary);
+    white-space: nowrap;
+  }
+
+  .tag.sec { color: var(--color-text-danger); border-color: var(--color-border-danger); background: var(--color-background-danger); }
+  .tag.perf { color: var(--color-text-warning); border-color: var(--color-border-warning); background: var(--color-background-warning); }
+  .tag.test { color: var(--color-text-success); border-color: var(--color-border-success); background: var(--color-background-success); }
+
+  .chevron {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--color-text-tertiary);
+    transition: transform 0.2s;
+  }
+
+  .step-card.open .chevron { transform: rotate(180deg); }
+
+  .step-body {
+    display: none;
+    padding: 0 16px 16px;
+    background: var(--color-background-primary);
+    border-top: 0.5px solid var(--color-border-tertiary);
+  }
+
+  .step-card.open .step-body { display: block; }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    margin-top: 16px;
+    margin-bottom: 6px;
+  }
+
+  .task-list { list-style: none; padding: 0; }
+  .task-list li {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    padding: 3px 0;
+    padding-left: 14px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .task-list li::before {
+    content: '–';
+    position: absolute;
+    left: 0;
+    color: var(--color-text-tertiary);
+    font-size: 11px;
+  }
+
+  .code-block {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--color-background-secondary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--color-text-secondary);
+    margin-top: 6px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .commit-block {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--color-background-secondary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-left: 2px solid var(--color-border-success);
+    border-radius: 0 6px 6px 0;
+    padding: 8px 12px;
+    color: var(--color-text-success);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  .dod-block {
+    font-size: 12px;
+    background: var(--color-background-secondary);
+    border: 0.5px solid var(--color-border-tertiary);
+    border-radius: 6px;
+    padding: 10px 12px;
+    color: var(--color-text-primary);
+    margin-top: 6px;
+    line-height: 1.7;
+  }
+
+  .dod-item {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    padding: 2px 0;
+    line-height: 1.5;
+  }
+
+  .dod-check {
+    color: var(--color-text-success);
+    font-size: 11px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 8px;
+    padding: 1rem 1rem 0;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--color-background-secondary);
+    border: 0.5px solid var(--color-border-tertiary);
+    color: var(--color-text-secondary);
+  }
+
+  .stat-pill strong {
+    color: var(--color-text-primary);
+    font-weight: 600;
+  }
+</style>
+
+<body-wrap>
+<div class="rm-header">
+  <div class="rm-title">Engineering Execution Roadmap · Flutter + FastAPI + Redis</div>
+  <div class="rm-h1">Ephemeral Radar &amp; Compass App</div>
+  <div class="rm-sub">Production-grade · 44 steps · Staff engineer perspective</div>
+</div>
+
+<div class="stats-row">
+  <span class="stat-pill"><strong>44</strong> steps</span>
+  <span class="stat-pill"><strong>11</strong> phases</span>
+  <span class="stat-pill"><strong>Flutter</strong> + Riverpod + BLoC</span>
+  <span class="stat-pill"><strong>FastAPI</strong> + Redis + WebSocket</span>
+  <span class="stat-pill"><strong>Firebase FCM</strong></span>
+</div>
+
+<div class="phase-nav" id="phaseNav"></div>
+
+<div class="steps-container" id="stepsContainer"></div>
+</body-wrap>
+
+<script>
+const phases = [
+  {
+    id: "setup",
+    label: "01 · Setup",
+    title: "Engineering Setup",
+    steps: [
+      {
+        num: "01",
+        name: "Monorepo Initialization",
+        obj: "Production-grade mono-repo with enforced boundaries",
+        tags: ["sec"],
+        tasks: [
+          "Create root monorepo: /apps/mobile (Flutter), /apps/backend (FastAPI), /packages/shared (proto/models), /infra (IaC)",
+          "Initialize Flutter project: flutter create --org io.radarapp --platforms android,ios apps/mobile",
+          "Initialize FastAPI backend with pyproject.toml, src-layout under apps/backend/src/",
+          "Configure Melos for Flutter workspace and Poetry for Python deps",
+          "Set up .editorconfig, .gitattributes with LF enforcement",
+          "Configure Husky + commitlint with conventional commits enforcer",
+          "Set up branch strategy: main → staging → feature/* with protected main requiring 2 approvals",
+          "Add comprehensive .gitignore: *.env, *.keystore, GoogleService-Info.plist, google-services.json, .dart_tool, __pycache__, .ruff_cache"
+        ],
+        security: ["Never commit secrets — pre-commit hook using detect-secrets", "Sign commits with GPG in CI", "Add CODEOWNERS file for sensitive paths"],
+        perf: ["Configure .melos.yaml for selective package builds", "Enable ccache in CI for native compile caching"],
+        test: ["Verify flutter build apk --debug passes from clean state", "Verify uvicorn apps.backend.src.main:app runs"],
+        run: "melos bootstrap && cd apps/backend && poetry install",
+        debug: "If flutter pub get fails: clear pub cache with flutter pub cache repair",
+        dod: ["Mono-repo clones and bootstraps in < 3 minutes on clean machine", "No secrets in git history (trufflehog clean scan passes)", "All enforced commit hooks operational"],
+        commit: "feat: initialize production monorepo with flutter mobile and fastapi backend"
+      },
+      {
+        num: "02",
+        name: "Environment & Secrets Management",
+        obj: "Zero hardcoded values — environment-based config for all environments",
+        tags: ["sec"],
+        tasks: [
+          "Create .env.development, .env.staging, .env.production templates with all required keys documented",
+          "Mobile: use flutter_dotenv + --dart-define-from-file for compile-time injection (API_BASE_URL, FCM_SENDER_ID, DEEP_LINK_SCHEME, REGION_WS_URLS as JSON map)",
+          "Backend: use Pydantic BaseSettings with env_prefix, validated at startup — fail fast on missing required keys",
+          "Create AppConfig singleton in Flutter that parses compile-time defines; never read dotenv at runtime",
+          "Store sensitive CI secrets in GitHub Actions encrypted secrets + environment protection rules",
+          "Document every required env variable in /docs/env-reference.md with type, required flag, and example",
+          "Add env validation step to CI that runs before build: compare .env.example against required keys"
+        ],
+        security: ["Production secrets only in secret manager (AWS Secrets Manager / GCP Secret Manager), never in files", "Rotate secrets on every deployment via secret rotation script", "Never log any value from AppConfig"],
+        perf: [],
+        test: ["Assert startup fails with descriptive error if API_BASE_URL is missing", "Test AppConfig returns correct values per build flavor"],
+        run: "flutter run --dart-define-from-file=.env.development",
+        debug: "If dotenv key not found: verify --dart-define-from-file path is relative to project root",
+        dod: ["flutter run with wrong env file prints specific missing-key error, not a null crash", "Backend pydantic validation rejects startup with missing required env"],
+        commit: "build: add environment-based config with pydantic settings and flutter dart-define"
+      },
+      {
+        num: "03",
+        name: "CI/CD Pipeline Foundation",
+        obj: "Automated quality gates before any feature code is written",
+        tags: ["test"],
+        tasks: [
+          "GitHub Actions: mobile-ci.yml — triggers on PR to main/staging: flutter analyze, flutter test, flutter build apk/ipa",
+          "GitHub Actions: backend-ci.yml — triggers on PR: ruff lint, mypy strict, pytest with coverage threshold ≥ 80%",
+          "Add build matrix: android (minSdk 24, targetSdk 34), iOS (min 14.0)",
+          "Cache: Flutter SDK, Gradle cache, CocoaPods cache, Python venv using cache action with lockfile hash keys",
+          "Mobile: add fastlane for iOS/Android deployment orchestration (lanes: release)",
+          "Backend: add Docker build + push to registry on merge to main",
+          "Add PR labeler and stale bot",
+          "Enforce required status checks on protected branches"
+        ],
+        security: ["Store Apple certs/provisioning in Fastlane Match (readonly CI mode)", "Use OIDC token-based auth for cloud deployments — no long-lived keys in CI", "Scan Docker images with Trivy on every build"],
+        perf: ["Shard Flutter tests across 4 runners", "Use Gradle build cache with remote cache server"],
+        test: ["CI must fail on any lint error, type error, or failing test", "Build artifacts must be reproducible — no timestamp in binary"],
+        run: "gh act pull_request  # local CI simulation",
+        debug: "iOS build failing: verify MATCH_PASSWORD and MATCH_GIT_URL are set in environment secrets",
+        dod: ["PR to main triggers full CI in < 8 minutes", "No merge possible if any check fails", "Build artifacts uploaded as workflow artifacts"],
+        commit: "ci: add github actions pipelines for flutter mobile and fastapi backend"
+      }
+    ]
+  },
+  {
+    id: "backend-core",
+    label: "02 · Backend Core",
+    title: "Backend Core Infrastructure",
+    steps: [
+      {
+        num: "04",
+        name: "FastAPI Project Structure",
+        obj: "Clean layered architecture — router → service → repository → data store",
+        tags: [],
+        tasks: [
+          "Structure: src/api/v1/routes/, src/services/, src/repositories/, src/models/, src/core/, src/infrastructure/",
+          "Core: config.py (Pydantic settings), security.py (token ops), exceptions.py (domain exceptions), logging.py (structured JSON)",
+          "Implement global exception handler: maps domain exceptions to HTTP status with structured error envelope",
+          "Add request ID middleware: injects X-Request-ID header, propagates to all log lines",
+          "Add CORS middleware: allowlist-based, strict origin validation from env config",
+          "Versioned router: all routes under /api/v1/ — never expose unversioned paths",
+          "Health check: GET /health returns {status, version, redis_connected, timestamp}",
+          "Add Prometheus metrics middleware — request count, latency histogram per route"
+        ],
+        security: ["CORS origin must come from env, never wildcard in non-dev", "X-Request-ID must not leak internal trace IDs externally", "Error responses must never expose stack traces or internal paths"],
+        perf: ["Use lifespan context manager for startup/shutdown, not @app.on_event (deprecated)", "Connection pooling for Redis at startup, not per-request"],
+        test: ["Unit test exception handler maps each domain exception correctly", "Integration test /health returns 200 with redis_connected: true"],
+        run: "uvicorn src.main:app --reload --port 8000",
+        debug: "Import errors on startup: check PYTHONPATH includes src/ directory",
+        dod: ["GET /health returns 200 with all fields", "Malformed request returns structured {error, code, request_id} — never a 500 stack trace", "All routes require explicit version prefix"],
+        commit: "feat: add fastapi project structure with layered architecture and middleware stack"
+      },
+      {
+        num: "05",
+        name: "Redis Infrastructure Layer",
+        obj: "Redis connection pool, all data schema implementations, TTL management",
+        tags: ["perf"],
+        tasks: [
+          "Redis client: use redis-py async client (redis.asyncio) with connection pool (max_connections from env)",
+          "Implement RedisRepository base class with typed get/set/delete, health check",
+          "Session repository: HSET session:{id} all fields, EXPIRE 12h — wrap all ops in pipeline where possible",
+          "Member roster: SADD/SREM/SMEMBERS session:{id}:members — pipeline with session creation",
+          "User profile: HSET user:{id} display_name/avatar/privacy_mode/current_session",
+          "Geospatial: GEOADD session:{id}:locations — GEORADIUS for proximity queries",
+          "Chat: RPUSH session:{id}:chat:global, RPUSH session:{id}:chat:dm:{u1}:{u2} — cap lists with LTRIM to last 200 messages",
+          "Path stream (V2): XADD session:{id}:path:{user_id} with lat/lng/ts fields",
+          "Key expiry propagation: when session key expires, register keyspace notification to trigger cleanup cascade"
+        ],
+        security: ["Never store raw GPS coordinates in logs", "Use Redis ACLs: backend user has only required commands, no CONFIG/DEBUG", "Enable Redis AUTH and TLS in non-dev environments"],
+        perf: ["Pipeline multi-step operations — session create must be atomic (MULTI/EXEC)", "Use GEORADIUSBYMEMBER for proximity — O(N+log M) not O(N²)", "LTRIM chat lists to prevent unbounded memory growth"],
+        test: ["Integration tests against redis-py fakeredis for unit, real Redis for integration", "Test TTL: create session, advance time, assert key gone", "Test GEORADIUS returns correct users within 20m threshold"],
+        run: "docker compose up redis  # local Redis with keyspace notifications enabled",
+        debug: "Keyspace notifications: ensure redis.conf has 'notify-keyspace-events KEA' or set via CONFIG SET",
+        dod: ["All Redis ops wrapped in try/except with structured log on failure", "Session create is atomic — partial session impossible", "GEORADIUS test passes at 1m, 20m, 21m boundary"],
+        commit: "feat: implement redis data layer with geospatial, session, chat, and member schemas"
+      },
+      {
+        num: "06",
+        name: "Session Lifecycle API",
+        obj: "Create, verify, join, and terminate session endpoints",
+        tags: ["sec"],
+        tasks: [
+          "POST /api/v1/sessions — admin creates session: generates session_id (UUIDv4), passkey (8-char cryptographically random alphanumeric), stores in Redis, returns session_id + passkey + deep link URL",
+          "GET /api/v1/sessions/verify?s={id}&p={passkey} — validates session+passkey, returns session_name, host_name, active_members, websocket_url (region-aware from env)",
+          "POST /api/v1/sessions/{id}/join — registers user_id in member roster, sets user profile",
+          "DELETE /api/v1/sessions/{id} — admin only: broadcasts SESSION_ENDED to WebSocket room, purges all Redis keys (pipeline: DEL session:*, members, locations, chat:*, path:*)",
+          "POST /api/v1/sessions/{id}/leave — removes user from roster, broadcasts USER_DISCONNECTED, purges user's geospatial entry",
+          "Admin authorization: verify admin_id matches token sub on session terminate",
+          "Generate passkey: secrets.token_urlsafe(6) — always 8 chars, URL-safe characters only"
+        ],
+        security: ["Passkey must be timing-attack safe: use hmac.compare_digest for comparison, never == operator", "Session IDs must not be sequential or guessable (UUIDv4 only)", "Verify endpoint must not expose whether session exists if passkey is wrong — always return 404", "Rate limit: max 5 create session calls per IP per minute"],
+        perf: ["Session creation must complete in < 50ms (single Redis pipeline)", "Verify endpoint cached at CDN edge for 0s (always fresh — contains active_members)"],
+        test: ["Test passkey brute-force: 1000 wrong passkeys → 404 every time (no timing difference)", "Test admin-only delete: non-admin token returns 403", "Integration test full session lifecycle: create → join → leave → terminate"],
+        run: "curl -X POST http://localhost:8000/api/v1/sessions -H 'Content-Type: application/json' -d '{\"session_name\": \"Test\", \"chat_enabled\": true}'",
+        debug: "Redis pipeline errors: check connection pool exhaustion with redis-cli INFO clients",
+        dod: ["Session create → verify → join → terminate cycle works end-to-end", "Passkey comparison passes timing-safe test", "Expired session returns 404 (not 500)"],
+        commit: "feat: implement session lifecycle api with secure passkey generation and admin controls"
+      },
+      {
+        num: "07",
+        name: "WebSocket Server",
+        obj: "Persistent real-time connections with room-based broadcasting",
+        tags: ["perf"],
+        tasks: [
+          "WebSocket endpoint: WS /ws/{session_id}?token={auth_token} — authenticate token before upgrade",
+          "ConnectionManager class: maintains {session_id: Set[WebSocket]} registry, thread-safe with asyncio.Lock",
+          "Message protocol: JSON envelope {type, payload, sender_id, timestamp} — typed enum for all message types",
+          "Message types: LOCATION_UPDATE, USER_CONNECTED, USER_DISCONNECTED, SESSION_ENDED, CHAT_MESSAGE, PULSE_PING, PRIVACY_UPDATE",
+          "Location broadcast: receive LOCATION_UPDATE → GEOADD to Redis → check proximity (GEORADIUSBYMEMBER 20m) → if threshold crossed: enqueue FCM notification → broadcast to room (exclude sender if full_map disabled)",
+          "Apply privacy filter before broadcasting: direction_only strips lat/lng, direction_distance adds distance only, full_map passes through",
+          "Heartbeat: server sends PING every 30s, expects PONG within 10s — disconnect on timeout",
+          "Handle disconnect: remove from ConnectionManager + Redis roster + GeoSet, broadcast USER_DISCONNECTED"
+        ],
+        security: ["Validate auth token on WS upgrade — reject before handshake completes", "Max connections per session from env (default 50)", "Message payload size limit: 2KB max — disconnect on oversized payload", "Never broadcast sender's exact coordinates if their privacy is direction_only"],
+        perf: ["Use asyncio.gather for fan-out broadcast — do not await each send sequentially", "Background tasks for Redis writes — do not block broadcast path on persistence", "WebSocket compression: permessage-deflate with threshold 1KB"],
+        test: ["Load test: 50 concurrent WS connections, broadcast latency < 100ms p99", "Test privacy filter: direction_only client never receives lat/lng in broadcast", "Test heartbeat: connection drops if PONG not received"],
+        run: "wscat -c 'ws://localhost:8000/ws/sess_test?token=...'",
+        debug: "Connection drops silently: enable WebSocket debug logging, check heartbeat timeout is not too aggressive",
+        dod: ["50 clients in one session, location broadcast round-trip < 100ms", "Privacy filter proven by test: lat/lng never in direction_only payload", "Disconnect cleans up all Redis entries atomically"],
+        commit: "feat: implement websocket server with room management, privacy filtering, and heartbeat"
+      },
+      {
+        num: "08",
+        name: "Authentication & Token System",
+        obj: "Stateless auth with short-lived tokens — no persistent user accounts",
+        tags: ["sec"],
+        tasks: [
+          "Ephemeral identity: POST /api/v1/auth/token — accepts {user_id (client-generated UUIDv4), session_id, passkey} — returns signed JWT (exp: 24h, matching session TTL)",
+          "JWT payload: {sub: user_id, session_id, role: admin|member, iat, exp} — signed with RS256 (asymmetric — public key verifiable without secret)",
+          "Token validation middleware: extract Bearer token, verify signature, check exp, check session_id matches route param",
+          "Rejoin token: embed current_session in Redis user hash — on rejoin, validate token + check session still active",
+          "Public key endpoint: GET /api/v1/auth/jwks — returns JWKS for external verification",
+          "Key rotation: RS256 keypair stored in secret manager, rotation supported via kid header",
+          "Token blacklist: on explicit logout/leave, add jti to Redis set with matching TTL"
+        ],
+        security: ["RS256 not HS256 — private key never leaves backend, mobile app only needs public key", "jti claim in every token for blacklisting", "Token endpoint rate limited: 10/min per IP", "Tokens must not contain PII beyond user_id", "Validate aud claim matches expected service identifier"],
+        perf: ["Public key cached in-process — no Redis lookup on every request", "JWT verification is CPU-bound — use process pool for > 1000 req/s (future scaling path)"],
+        test: ["Test expired token returns 401", "Test tampered token signature returns 401", "Test blacklisted token (after leave) returns 401"],
+        run: "python -c \"from src.core.security import create_token; print(create_token('user_test', 'sess_test', 'member'))\"",
+        debug: "JWT decode error: verify clock skew < 5s between client and server (use NTP)",
+        dod: ["Token issued, used on WS, invalidated on leave — all in integration test", "Tampered token rejected in < 1ms", "JWKS endpoint returns valid public key"],
+        commit: "security: implement rs256 jwt authentication with ephemeral identity and token blacklisting"
+      }
+    ]
+  },
+  {
+    id: "mobile-core",
+    label: "03 · Mobile Core",
+    title: "Flutter Mobile Foundation",
+    steps: [
+      {
+        num: "09",
+        name: "Flutter Architecture Setup",
+        obj: "Clean architecture with Riverpod state management and typed navigation",
+        tags: [],
+        tasks: [
+          "Architecture: features/ directory per domain (session, radar, compass, chat, profile, auth), each with presentation/application/domain/infrastructure layers",
+          "State management: Riverpod 2.x with code generation (@riverpod annotations) — providers in application layer",
+          "Navigation: GoRouter with typed routes (go_router_builder) — declarative, deep-link aware, handles cold start from deep link",
+          "Dependency injection: Riverpod ProviderScope at app root — no service locators",
+          "Theme system: ThemeData with ColorScheme.dark() as default — all colors from theme, zero hardcoded hex values",
+          "Environment-aware AppConfig injected at main.dart via ProviderScope overrides from --dart-define",
+          "Error boundary: FlutterError.onError + PlatformDispatcher.instance.onError → Sentry/Crashlytics",
+          "Flavors: development, staging, production — separate google-services.json per flavor"
+        ],
+        security: ["No secrets in Flutter app source", "AppConfig validated at launch — crash if required config missing"],
+        perf: ["Riverpod AsyncNotifier for all async state — avoid FutureProvider for mutable state", "Use ref.watch not ref.read in build methods for auto-rebuild"],
+        test: ["Widget test: app renders without crash from clean state", "Test GoRouter redirects unauthenticated user to entry screen"],
+        run: "flutter run --flavor development --dart-define-from-file=.env.development",
+        debug: "Riverpod provider not found: check ProviderScope is ancestor of all consumers",
+        dod: ["App launches in all 3 flavors", "Deep link to /join?s=X&p=Y opens JoinScreen", "GoRouter handles unknown routes with 404 screen"],
+        commit: "feat: initialize flutter architecture with riverpod, gorouter, and feature-based structure"
+      },
+      {
+        num: "10",
+        name: "Design System & Theme",
+        obj: "Dark-first design tokens, typography, and reusable component library",
+        tags: [],
+        tasks: [
+          "Design tokens: AppColors (radar green accent, dark backgrounds, semantic colors), AppSpacing, AppRadius, AppTypography — all as Dart constants, never inline",
+          "Dark-first: ThemeData.dark() base, custom ColorScheme with radar aesthetic (deep black bg, neon green primary, electric blue secondary)",
+          "Typography scale: Syne for display headers, JetBrains Mono for IDs/codes, system font for body",
+          "Components: RadarButton (primary/secondary/danger variants), RadarCard, RadarTextField, AvatarBlip, StatusBadge, PrivacyToggle",
+          "Animation constants: kRadarSweepDuration, kCompassLerpDuration, kBlipFadeOut — never hardcode durations",
+          "Bottom sheet system: RadarBottomSheet wrapper with standard drag handle, peek/expand states",
+          "Snackbar system: RadarSnackbar.show(context, type: info/warning/danger) — themed, dismissible",
+          "Accessibility: minimum 44px touch targets, semantic labels on all interactive elements"
+        ],
+        security: [],
+        perf: ["All component builds are const where possible", "No heavy operations in build() methods"],
+        test: ["Golden tests for all design system components in light and dark mode", "Accessibility audit: run flutter_a11y on all screens"],
+        run: "flutter test test/design_system/ --update-goldens",
+        debug: "Golden test diff: run with --update-goldens once, then commit golden files",
+        dod: ["All design tokens documented in /docs/design-system.md", "Zero hardcoded colors in feature code", "All components pass golden tests"],
+        commit: "feat: add dark-first design system with radar aesthetic, tokens, and component library"
+      },
+      {
+        num: "11",
+        name: "Network Layer & WebSocket Client",
+        obj: "Typed HTTP client and resilient WebSocket with auto-reconnect",
+        tags: ["sec"],
+        tasks: [
+          "HTTP: dio + dio_provider — interceptors for: auth token injection, request logging, response error mapping to domain exceptions",
+          "Typed API client: abstract ApiClient interface, DioApiClient implementation — never expose raw Response objects",
+          "WebSocket: web_socket_channel — wrap in RadarWebSocketService with: connect/disconnect lifecycle, message stream as Stream<RadarMessage>, auto-reconnect with exponential backoff (max 5 retries, 30s cap)",
+          "Message deserialization: sealed class RadarMessage with subtypes per message type — use freezed + json_serializable",
+          "AppLifecycleObserver: pause WS stream on AppLifecycleState.paused, resume + HTTP snapshot on resumed",
+          "Network connectivity: connectivity_plus — switch to degraded mode on no connection, show offline banner",
+          "Certificate pinning: add expected server cert SHA-256 hashes for production endpoints",
+          "Request timeout: 10s connect, 30s read — no hanging requests"
+        ],
+        security: ["Certificate pinning in production flavor only", "Never log auth tokens or location data in request logs", "All HTTP must use HTTPS — reject http:// URLs at AppConfig validation"],
+        perf: ["WebSocket reconnect must not block UI thread", "HTTP response caching for /verify endpoint (session join — immutable during join flow)"],
+        test: ["Unit test auto-reconnect: mock server disconnect, verify 3 retry attempts with backoff", "Test AppLifecycle pause: WS stream pauses, HTTP snapshot fires on resume"],
+        run: "flutter test test/network/ --coverage",
+        debug: "WS connection refused: check server is running and token is not expired; verify wss:// not ws:// in production",
+        dod: ["WS reconnects automatically after network drop without user action", "All network errors surface as typed domain exceptions, never raw DioException", "Certificate pinning test passes in integration"],
+        commit: "feat: add typed network layer with websocket client, auto-reconnect, and lifecycle management"
+      },
+      {
+        num: "12",
+        name: "Secure Local Storage",
+        obj: "Encrypted local persistence for session tokens and user profile",
+        tags: ["sec"],
+        tasks: [
+          "Sensitive data: flutter_secure_storage — stores session_id, auth_token, user_id — encrypted with Keychain (iOS) / Keystore (Android)",
+          "Profile data: shared_preferences — stores display_name, avatar_url, default privacy_mode — non-sensitive only",
+          "SessionCache model: session_id, auth_token, session_name, joined_at — serialized as JSON in secure storage",
+          "RejoinService: on app start, checks secure storage for active session, validates expiry, surfaces to HomeScreen",
+          "Clear on explicit leave: SecureStorage.deleteAll() on user-initiated leave or session terminated event",
+          "Android: set encrypted SharedPreferences for non-sensitive data as well (EncryptedSharedPreferences)",
+          "iOS: set accessibility = kSecAttrAccessibleAfterFirstUnlock for background location access compatibility"
+        ],
+        security: ["Never store GPS coordinates locally", "Secure storage must not be backed up in iCloud/Google Backup — set iCloudContainerIdentifier to nil, BackupAgent to none", "Token expiry check before use — never use expired token silently"],
+        perf: ["Async storage reads must not block app startup — use FutureProvider with loading state"],
+        test: ["Test: token written → app killed → token readable on relaunch", "Test: explicit leave clears all secure storage entries", "Test: expired token triggers re-join flow, not silent 401"],
+        run: "flutter test test/storage/ --coverage",
+        debug: "SecureStorage read fails on Android: check FLAG_SECURE not set on test device, clear app data to reset keystore",
+        dod: ["Token survives app kill, cleared on leave", "No sensitive data in SharedPreferences (grep audit)", "iCloud backup exclusion verified on iOS"],
+        commit: "security: implement encrypted local storage with secure token persistence and rejoin cache"
+      }
+    ]
+  },
+  {
+    id: "location",
+    label: "04 · Location",
+    title: "Location & Sensor Engine",
+    steps: [
+      {
+        num: "13",
+        name: "Location Service & Permissions",
+        obj: "Dynamic accuracy management, battery-conscious polling, and permission flow",
+        tags: ["sec", "perf"],
+        tasks: [
+          "LocationService: wraps geolocator — exposes Stream<Position> with configurable accuracy and distanceFilter",
+          "Accuracy modes: LocationAccuracy.medium (radar view, distanceFilter: 10m), LocationAccuracy.high (compass view, distanceFilter: 2m)",
+          "Background mode: on AppLifecycleState.paused → drop to distanceFilter: 30m accuracy: low",
+          "Permission flow: PermissionService — checks current status, shows primer screen (custom) before OS prompt",
+          "Android: request ACCESS_FINE_LOCATION first, then guide user to Settings for ACCESS_BACKGROUND_LOCATION (Android 11+ two-step)",
+          "iOS: request whenInUse first, then guide to Settings for Always — detect return via AppLifecycle.resumed + re-check",
+          "Hard blocker screen: if background permission denied, show BlurredRadarBlocker — two options: Go to Settings or Leave Session",
+          "Position stream: filter positions with accuracy < 50m — discard noisy readings"
+        ],
+        security: ["Location data must only be sent to backend while session active — LocationService stops on session end", "Log permission grant/deny events for support (no coordinates)"],
+        perf: ["distanceFilter is the primary battery lever — never set to 0", "Pause position stream when WS is disconnected — no point broadcasting if not connected", "Background → low accuracy saves ~40% battery vs high accuracy"],
+        test: ["Mock geolocator: test distanceFilter switches on accuracy mode change", "Permission flow test: primer → OS prompt → denied → hard blocker shown", "Test: position stream pauses on AppLifecycle.paused"],
+        run: "flutter drive --target=test_driver/location_test.dart",
+        debug: "Location permission stuck on Android 12+: ensure manifest has ACCESS_BACKGROUND_LOCATION and requestPermission shows custom dialog before redirect",
+        dod: ["Background permission flow works on Android 12 and iOS 16 (tested on physical devices)", "Hard blocker prevents entry to radar without background permission", "distanceFilter confirmed via Logcat/Instruments during walk test"],
+        commit: "feat: implement location service with dynamic accuracy, battery optimization, and permission flow"
+      },
+      {
+        num: "14",
+        name: "Foreground Service (Android) & Background Task (iOS)",
+        obj: "OS-compliant background location broadcasting with mandatory user notification",
+        tags: ["sec"],
+        tasks: [
+          "Android: flutter_foreground_task — start foreground service with sticky notification when radar session starts",
+          "Notification content: 'Radar active: sharing location with [Session Name]' with action button 'Stop Sharing'",
+          "Android notification channel: IMPORTANCE_LOW (no sound), persistent, non-dismissible while session active",
+          "iOS: enable Background Modes: location updates in Info.plist. Use CLLocationManager startUpdatingLocation — iOS handles background delivery",
+          "iOS background throttle: when app enters background, geolocator automatically throttles — document this behavior for QA",
+          "Stop sharing action on notification: fires a BroadcastReceiver / app-level event → calls LeaveSessionUseCase → stops location service",
+          "On session end (admin terminates): stop foreground service, dismiss notification immediately",
+          "FlutterForegroundTask.isRunningService check before starting — prevent duplicate service"
+        ],
+        security: ["Notification must always show session name — user must always know which session is active", "Stop Sharing notification action must work even if app process is killed"],
+        perf: ["Foreground service adds ~2% CPU overhead — acceptable for tracking use case", "Do not start foreground service before session is confirmed active"],
+        test: ["Manual QA: start radar, lock screen, verify notification present, tap Stop Sharing → verify blip disappears for others", "Test: session terminated by admin → notification dismissed within 2s"],
+        run: "Connect physical Android device, adb logcat | grep ForegroundService",
+        debug: "Service not starting on Android 14: check FOREGROUND_SERVICE_LOCATION permission in manifest (required Android 14+)",
+        dod: ["Notification appears within 1s of joining session on Android", "Stop Sharing button works from locked screen", "Foreground service stops cleanly on session end (no zombie service)"],
+        commit: "feat: add android foreground service and ios background location with session-linked notification"
+      },
+      {
+        num: "15",
+        name: "Compass & Bearing Engine",
+        obj: "Real-time bearing calculation with sensor fusion and smooth lerp animation",
+        tags: ["perf"],
+        tasks: [
+          "CompassService: uses sensors_plus — FlutterCompass stream (magnetometer + accelerometer fusion)",
+          "Bearing calculation: Haversine formula to compute bearing from current lat/lng to target lat/lng (pure Dart, no native calls)",
+          "Relative bearing: subtract device heading from absolute bearing → renders arrow pointing toward target in device space",
+          "Magnetometer calibration detection: if SensorEvent accuracy < SENSOR_STATUS_ACCURACY_MEDIUM, show 'GPS Accuracy: Low' badge",
+          "Lerp service: CompassLerpController — takes current and target bearing, uses TweenAnimationBuilder with shortest-path interpolation (handles 350° → 10° wraparound correctly via modulo arithmetic)",
+          "Bearing wraparound fix: delta = ((target - current + 540) % 360) - 180 — always takes shortest arc",
+          "Separate sensors by view: only subscribe to magnetometer in Compass view, not Radar view (battery)",
+          "Isolate sensor processing: use compute() for matrix math if > 5ms per frame"
+        ],
+        security: [],
+        perf: ["Sensor stream at 20Hz is sufficient — do not use maximumFps mode", "Unsubscribe sensor streams when CompassView is disposed", "Shortest-path lerp prevents 360° animation that looks glitchy"],
+        test: ["Unit test bearing: user at 0°N, target at 45°NE → bearing = 45°", "Unit test wraparound: 350° → 10° takes 20° arc not 340° arc", "Unit test relative bearing: absolute 90°, device heading 45° → arrow at 45°"],
+        run: "flutter test test/compass/ --coverage",
+        debug: "Compass drifts indoors: expected behavior from magnetic interference — show accuracy badge, do not attempt software correction",
+        dod: ["Compass arrow smoothly tracks target during walk test (no snapping)", "Wraparound test passes for all 4 quadrant transitions", "Magnetometer unsubscribed when leaving Compass view (confirmed by battery profiler)"],
+        commit: "feat: implement compass bearing engine with sensor fusion, lerp animation, and shortest-path interpolation"
+      }
+    ]
+  },
+  {
+    id: "features",
+    label: "05 · Features",
+    title: "Core Feature Implementation",
+    steps: [
+      {
+        num: "16",
+        name: "QR Code Generation & Deep Link Handling",
+        obj: "Minified QR payload, deep link routing, and fallback web page",
+        tags: ["sec"],
+        tasks: [
+          "QR payload: minified JSON {s: session_id, p: passkey, r: region} encoded as deep link URL: radarapp://join?s=X&p=Y&r=Z",
+          "QR generation: qr_flutter package — render as 300×300 Widget, high error correction (L is sufficient for short payload)",
+          "QR display: WaitingRoomScreen shows QR centered, with share_plus button to share link as text/URL",
+          "Deep link ingestion: app_links package — handles cold start and warm start deep links",
+          "GoRouter redirect: on /join?s=X&p=Y → parse params → call VerifySessionUseCase → navigate to JoinConfirmBottomSheet",
+          "Web fallback: static page at radarapp.io/join — detects no app installed, shows download CTA with App Store/Play Store links",
+          "HTTPS deep link (Universal Links / App Links): configure associated-domains in iOS entitlements, assetlinks.json on server",
+          "Link validation: reject malformed deep links with snackbar, never crash on unexpected params"
+        ],
+        security: ["QR payload must include passkey — session_id alone is not sufficient for entry", "Passkey in URL is acceptable — HTTPS transport + short TTL mitigates interception risk", "Validate deep link origin — only accept from configured scheme/domain"],
+        perf: ["QR rendering is synchronous — for 300px size, negligible CPU"],
+        test: ["Test: scan QR → cold start → lands on JoinConfirmBottomSheet with correct session name", "Test: warm start deep link opens JoinConfirmBottomSheet without restarting app", "Test: expired session deep link → snackbar 'Radar not found'"],
+        run: "adb shell am start -a android.intent.action.VIEW -d 'radarapp://join?s=test&p=abc123&r=us-east'",
+        debug: "Universal links not firing on iOS: verify apple-app-site-association is served at HTTPS root with correct Content-Type: application/json",
+        dod: ["QR scan on stock camera app opens app (not browser) with pre-filled join sheet", "Web fallback page loads on non-app devices", "Malformed deep links handled gracefully"],
+        commit: "feat: implement qr generation, deep link handling, and universal links with web fallback"
+      },
+      {
+        num: "17",
+        name: "Session Entry Flow (Create & Join)",
+        obj: "Sub-2-second flow from scan to radar — admin setup and guest join paths",
+        tags: [],
+        tasks: [
+          "EntryScreen: two CTAs — 'Create a Radar' (navigates to SessionSetupSheet) and 'Scan to Join' (opens camera via mobile_scanner)",
+          "SessionSetupSheet (admin): session name field (auto-generated fun name from curated word list, editable), chat toggle, 'Generate QR' button",
+          "Fun name generator: adjective + noun word lists (200 entries each) stored in assets — never fetch from network",
+          "CreateSessionNotifier: calls CreateSessionUseCase → backend POST /sessions → stores result in secure storage → navigates to WaitingRoom",
+          "WaitingRoom (admin): QR code display + share link + live member list (stream from WebSocket USER_CONNECTED events)",
+          "WaitingRoom (guest): shows name/avatar, privacy toggle pre-configuration, 'Waiting for host' state, launches to RadarView on SESSION_LAUNCHED event",
+          "JoinConfirmBottomSheet: shows session name, host name, active members count, user's own avatar/name with 'Edit for this session' override",
+          "RejoinCard on HomeScreen: shown when SecureStorage has active session — shows session name + Rejoin button"
+        ],
+        security: ["Display name sanitized: strip HTML, max 30 chars, allow only printable Unicode", "Avatar URL must be from allow-listed domains or data: URI only"],
+        perf: ["Pre-warm camera on EntryScreen focus — reduce scan latency", "WaitingRoom member list updates via WS events — not polling"],
+        test: ["E2E: two devices — device A creates, device B scans, both see each other in waiting room", "Test: admin sees 'Launch Radar' only when ≥ 1 guest has joined"],
+        run: "flutter drive --target=test_driver/session_flow_test.dart",
+        debug: "Camera not opening: check CAMERA permission in AndroidManifest.xml and NSCameraUsageDescription in Info.plist",
+        dod: ["Create → QR displayed in < 1s", "Scan → JoinConfirmSheet in < 2s (total including network round-trip)", "Rejoin card appears on home screen after simulated crash"],
+        commit: "feat: implement full session entry flow including create, scan-join, waiting room, and rejoin"
+      },
+      {
+        num: "18",
+        name: "Radar View",
+        obj: "2D radar canvas with isolated blip rebuilds and sweep animation",
+        tags: ["perf"],
+        tasks: [
+          "RadarCanvas: CustomPainter — draws polar grid, member blips as colored circles with display name below, sweep animation as arc",
+          "Blip positioning: convert lat/lng delta to screen X/Y using a linear scale based on max radar radius (configurable, default 200m)",
+          "Blip state: active (colored), going_offline (gray, frozen), gone (fade out to 0% over 2s via AnimatedOpacity)",
+          "RadarBlipProvider (Riverpod): per-user-id provider — only rebuilds individual blip when that user's location updates (use select to avoid global rebuild)",
+          "Sweep animation: AnimationController in RadarView — rotates sweep arc continuously, completely decoupled from location data",
+          "Direction-only privacy: blip placed at edge of radar at correct bearing, no distance positioning",
+          "Bottom sheet: horizontally scrolling AvatarRow — tap avatar → navigates to CompassView for that user",
+          "Tap blip on radar → navigates to CompassView",
+          "Performance: RepaintBoundary around RadarCanvas — blip updates do not repaint TopBar or BottomSheet"
+        ],
+        security: [],
+        perf: ["RadarCanvas must render at 60fps — profile with Flutter DevTools, fix if > 4ms frame build time", "Blip provider uses .select() — location update for user A does not rebuild user B's blip", "RepaintBoundary is mandatory — radar canvas repaint must not cascade"],
+        test: ["Widget test: 10 blips update simultaneously — assert frame build time < 4ms (use WidgetTester.binding.traceAction)", "Test direction-only blip is at radar edge at correct bearing"],
+        run: "flutter run --profile  # profile mode for accurate performance measurement",
+        debug: "Jank on blip update: use Flutter DevTools Timeline to identify which widget is rebuilding; add const constructors and select() calls",
+        dod: ["10 concurrent blip updates at 60fps — confirmed by DevTools timeline (no jank frames)", "RepaintBoundary verified: TopBar does not repaint on location update", "Direction-only blip renders at correct bearing"],
+        commit: "feat: implement radar view with custom painter, isolated blip rebuilds, and sweep animation"
+      },
+      {
+        num: "19",
+        name: "Compass View",
+        obj: "Smooth targeted tracking with lerp animation and privacy-aware display",
+        tags: ["perf"],
+        tasks: [
+          "CompassView: full-screen dark canvas — large animated compass arrow as center element",
+          "Arrow animation: TweenAnimationBuilder<double> with shortest-path bearing lerp, 300ms duration, Curves.easeOut",
+          "Target info: display name, distance metric (if privacy allows), GPS accuracy badge",
+          "Privacy enforcement: if target privacy = direction_only, hide distance — show '— m' placeholder",
+          "Enter high accuracy mode: on CompassView push → LocationService.setAccuracy(high)",
+          "Exit high accuracy mode: on CompassView pop → LocationService.setAccuracy(medium)",
+          "Message FAB: opens ChatOverlay directly to DM with this user",
+          "Back gesture: swipe down or tap X → pop with Hero transition back to RadarView",
+          "GPS accuracy badge: green/yellow/red based on geolocator accuracy reading"
+        ],
+        security: [],
+        perf: ["High accuracy GPS only active while CompassView is on screen — enforced via pushRoute/popRoute hooks", "Sensor stream subscription managed with ref.onDispose in Riverpod notifier"],
+        test: ["Test: enter CompassView → accuracy switches to high; pop → switches to medium (mock LocationService)", "Test: lerp animation does not snap — 10 location updates produce smooth bearing curve"],
+        run: "flutter test test/features/compass/ --coverage",
+        debug: "Arrow snaps instead of lerping: verify TweenAnimationBuilder key is NOT changing between rebuilds (stable key based on target user_id)",
+        dod: ["Compass arrow visually smooth at 60fps during walk test", "High accuracy confirmed active during CompassView, inactive elsewhere", "Distance hidden for direction_only targets"],
+        commit: "feat: implement compass view with smooth lerp, dynamic accuracy switching, and privacy enforcement"
+      },
+      {
+        num: "20",
+        name: "Privacy Controls",
+        obj: "Real-time privacy mode switching with immediate backend propagation",
+        tags: ["sec"],
+        tasks: [
+          "PrivacySheet: bottom sheet modal with segmented control (Direction Only | Direction + Distance | Full Map)",
+          "PrivacyNotifier: updates local state immediately (optimistic), sends PRIVACY_UPDATE WebSocket message",
+          "Backend: on PRIVACY_UPDATE message, update Redis user:{id} hash privacy_mode field, broadcast to room",
+          "Privacy filter in WS broadcast: server re-reads privacy_mode before each broadcast — source of truth is server, not client",
+          "Leave Session button in PrivacySheet: confirmation dialog before firing LeaveSessionUseCase",
+          "Persist last used privacy mode: store in SharedPreferences as default for next session",
+          "Visual feedback: selected mode has filled indicator, others are outlined",
+          "Privacy mode change is instant — no loading state needed (optimistic update)"
+        ],
+        security: ["Privacy filter is enforced server-side — client cannot spoof a lower privacy level for others", "Privacy state is per-session, not global — cleared with session data"],
+        perf: ["Privacy update is a single WS message — no HTTP round-trip"],
+        test: ["Integration test: set direction_only → verify no lat/lng in broadcast to other clients", "Test: privacy change survives app backgrounding and foregrounding"],
+        run: "flutter test test/features/privacy/ --coverage",
+        debug: "Privacy not taking effect: verify WS message is sent (check WS debug logs) and server Redis update is confirmed",
+        dod: ["Direction only confirmed: no lat/lng in WS broadcast after mode switch", "Mode persists to next session as default", "Leave button shows confirmation before executing"],
+        commit: "feat: implement granular privacy controls with server-side enforcement and real-time propagation"
+      },
+      {
+        num: "21",
+        name: "Chat Overlay",
+        obj: "Slide-in chat with group and DM tabs, spatially aware (radar still visible)",
+        tags: [],
+        tasks: [
+          "ChatOverlay: AnimatedContainer sliding in from right, 80% screen width, leaves 20% of radar visible",
+          "Slide animation: SlideTransition with CurvedAnimation (Curves.easeOutCubic, 250ms)",
+          "Swipe right-to-left to open, left-to-right to dismiss (GestureDetector + DragStartDetails velocity check)",
+          "Tabs: Group | DM — DM list shows all session members, tap → opens DM thread",
+          "Smart routing: opened from RadarView → defaults to Group tab; opened from CompassView via message FAB → defaults to DM tab for that user",
+          "Message list: ListView.builder with reverse: true — latest at bottom",
+          "Chat provider: Riverpod StreamProvider reading from WS CHAT_MESSAGE events filtered by tab",
+          "Send message: POST /api/v1/sessions/{id}/chat or WebSocket CHAT_MESSAGE event — optimistic UI",
+          "System messages: USER_CONNECTED/DISCONNECTED rendered as centered gray text rows",
+          "Pulse ping button: one-tap sends PULSE_PING to group — renders as special pinned card in chat"
+        ],
+        security: ["Message content: strip HTML/script tags before display (use flutter_widget_from_html or plain text only)", "Max message length: 500 chars — enforce on send, trim on receive"],
+        perf: ["Chat list must not rebuild radar beneath — RepaintBoundary on ChatOverlay", "Chat messages paginated: load last 50 on open, load older on scroll to top"],
+        test: ["Test: open from CompassView → DM tab pre-selected for correct user", "Test: swipe dismiss closes overlay", "Test: system message appears when user leaves mid-chat"],
+        run: "flutter test test/features/chat/ --coverage",
+        debug: "Chat rebuilding radar: add RepaintBoundary wrapping ChatOverlay in widget tree",
+        dod: ["Chat opens/closes with smooth slide animation (< 250ms, no jank)", "Group and DM tabs route correctly from both entry points", "System messages appear for connect/disconnect events"],
+        commit: "feat: implement slide-in chat overlay with group and dm tabs, smart routing, and pulse ping"
+      }
+    ]
+  },
+  {
+    id: "notifications",
+    label: "06 · Push & Notif",
+    title: "Notifications & FCM",
+    steps: [
+      {
+        num: "22",
+        name: "FCM Integration & Zero-Data Payloads",
+        obj: "Privacy-safe push notifications that wake the app, not deliver coordinates",
+        tags: ["sec"],
+        tasks: [
+          "Flutter: firebase_messaging — initialize in main.dart, request permission on session join (not app launch)",
+          "FCM token: register device token in POST /api/v1/sessions/{id}/join payload — stored in Redis user:{id} hash",
+          "Notification types: NEW_LOCATION_DATA (silent wake-up), PROXIMITY_ALERT, CHAT_MESSAGE, SESSION_ENDED, PULSE_PING",
+          "Zero-data rule: FCM payload contains ONLY {type, session_id} — no coordinates, no names, no PII",
+          "Backend FCM sender: firebase-admin Python SDK — send_multicast for room-wide notifications",
+          "On NEW_LOCATION_DATA (background): FlutterLocalNotifications silent notification → app authenticates with WS and pulls fresh snapshot",
+          "PROXIMITY_ALERT: vibrate + foreground notification 'Look up! [Name] is close' — trigger only once per 30s per target to prevent spam",
+          "Handle token refresh: firebase_messaging.onTokenRefresh → POST update to backend",
+          "iOS: APNs configuration, background fetch mode enabled"
+        ],
+        security: ["FCM payload must never contain GPS coordinates — enforced by server-side validation before send", "FCM tokens rotated on session leave, not reused across sessions", "Backend FCM sender uses service account credentials from secret manager, never hardcoded"],
+        perf: ["Silent notifications used for location sync — no user-visible banner for every location update", "Batch FCM sends: use send_multicast (max 500 tokens per call)"],
+        test: ["Integration test: send NEW_LOCATION_DATA FCM → verify no coordinates in FCM payload (intercept at mock FCM endpoint)", "Test proximity alert rate limiting: trigger 10 proximity events → only 1 notification sent per 30s"],
+        run: "firebase emulators:start --only functions  # Test FCM locally",
+        debug: "FCM not delivering on iOS background: verify background modes include 'remote-notification' in Info.plist",
+        dod: ["FCM payload inspection shows zero coordinates in transit", "Proximity alert fires at 20m threshold (tested on physical devices)", "Token refresh handled without user re-joining"],
+        commit: "security: implement zero-data fcm push notifications with privacy-safe payload architecture"
+      }
+    ]
+  },
+  {
+    id: "testing",
+    label: "07 · Testing",
+    title: "Testing Strategy",
+    steps: [
+      {
+        num: "23",
+        name: "Unit & Widget Test Suite",
+        obj: "≥ 80% code coverage on business logic and all UI components",
+        tags: ["test"],
+        tasks: [
+          "Domain layer: pure unit tests (no mocks needed) — bearing calculation, privacy filter, message serialization, session validation",
+          "Application layer: Riverpod notifier tests with ProviderContainer and mock repositories",
+          "Infrastructure layer: repository tests with fakeredis (Python) and mocktail (Flutter)",
+          "Widget tests: all screens with GoRouter test harness, mock all providers via ProviderScope overrides",
+          "Golden tests: design system components + radar blip + compass arrow states",
+          "Test coverage: flutter test --coverage → lcov report, pytest --cov with min threshold in CI",
+          "Custom matchers: RadarMessageMatcher, PrivacyFilterMatcher — reduce test verbosity",
+          "BLoC/Notifier tests: test every event/action that can be triggered from UI"
+        ],
+        security: ["Test that security middleware rejects tampered tokens in unit tests", "Test privacy filter strips coordinates correctly for each privacy mode"],
+        perf: [],
+        test: ["Run full suite: flutter test && pytest", "Coverage gate: fail CI if < 80% on business logic"],
+        run: "flutter test --coverage && genhtml coverage/lcov.info -o coverage/html",
+        debug: "Flaky test: add test timeout and check for shared state between tests (use setUp/tearDown)",
+        dod: ["≥ 80% coverage on domain + application layers", "Zero flaky tests in CI (re-run 3 times, all pass)", "Golden tests committed and reviewed"],
+        commit: "test: add comprehensive unit, widget, and golden test suites with coverage reporting"
+      },
+      {
+        num: "24",
+        name: "Integration & E2E Tests",
+        obj: "Full flow tests on real devices and backend integration",
+        tags: ["test"],
+        tasks: [
+          "Flutter integration tests: flutter_test + integration_test package — run on physical devices in CI",
+          "E2E scenarios: full_session_flow (create → join → radar → compass → leave), rejoin_flow, privacy_change_propagation, admin_terminate",
+          "Backend API tests: pytest with httpx AsyncClient against real FastAPI + real Redis (docker-compose in CI)",
+          "WebSocket integration tests: websockets Python client tests — simulate 10 concurrent connections",
+          "Cross-device scenario: two simulators/emulators — device A and B interact via backend",
+          "Performance integration: measure location broadcast latency end-to-end (client send → other client receive) target < 300ms",
+          "Fastlane scan for iOS integration tests on simulator"
+        ],
+        security: ["Integration tests must include: expired token rejection, wrong passkey rejection, admin-only endpoint enforcement"],
+        perf: ["Measure and assert: session create < 500ms, WS location broadcast round-trip < 300ms"],
+        test: ["Run: flutter drive --driver=test_driver/integration_test_driver.dart --target=integration_test/full_session_test.dart"],
+        run: "docker compose -f docker-compose.test.yml up --abort-on-container-exit",
+        debug: "Integration test flaky on CI: add retry logic for network assertions, increase timeout for Docker startup",
+        dod: ["All E2E flows pass on Android 14 and iOS 17 physical devices", "WS broadcast latency < 300ms asserted by automated test", "Security integration tests all pass"],
+        commit: "test: add e2e integration tests for session lifecycle, websocket, and cross-device flows"
+      },
+      {
+        num: "25",
+        name: "Security & Performance Testing",
+        obj: "OWASP Mobile verification and load test under peak concurrency",
+        tags: ["sec", "perf", "test"],
+        tasks: [
+          "OWASP MASVS checklist: run MobSF static analysis on APK/IPA — fail on critical/high findings",
+          "API security: run OWASP ZAP in CI against staging backend — SQL injection, XSS, auth bypass",
+          "Penetration test scenarios: passkey brute force (rate limit verified), session hijack attempt (wrong passkey → 404), replay attack (expired token → 401)",
+          "Load test: Locust — 100 concurrent WebSocket connections, 10 location updates/s per connection — assert < 2% error rate, < 200ms p95 broadcast latency",
+          "Flutter performance: run flutter run --profile on Pixel 8 and iPhone 15 — DevTools timeline shows < 4ms frame build time on RadarView with 10 blips",
+          "Memory leak test: open/close session 20 times — assert heap stable (no unbounded growth)",
+          "Battery test: 30-minute radar session — assert < 15% battery drain (device screen off)"
+        ],
+        security: ["MobSF scan must pass before release build is signed", "ZAP scan on staging must show 0 high-severity findings"],
+        perf: ["Locust load test must show < 2% WS error rate at 100 concurrent connections"],
+        test: ["All tests in this step are acceptance gates for release"],
+        run: "locust -f tests/load/locustfile.py --host=wss://staging.radarapp.io --users=100 --spawn-rate=10",
+        debug: "Load test failures: check Redis connection pool size matches expected concurrency",
+        dod: ["MobSF: 0 critical, 0 high findings", "ZAP: 0 high-severity API findings", "Locust: < 2% error rate at 100 concurrent WS users", "Frame time < 4ms on RadarView with 10 blips"],
+        commit: "test: add security scanning, owasp verification, and load tests with performance benchmarks"
+      }
+    ]
+  },
+  {
+    id: "observability",
+    label: "08 · Observability",
+    title: "Logging, Metrics & Crash Reporting",
+    steps: [
+      {
+        num: "26",
+        name: "Structured Logging & Crash Reporting",
+        obj: "Correlated logs across mobile and backend with PII-safe error tracking",
+        tags: ["sec"],
+        tasks: [
+          "Backend: structlog with JSON renderer — every log line contains: request_id, session_id (no user location), log level, service, timestamp",
+          "Log levels enforced: DEBUG (local), INFO (staging), WARNING+ (production)",
+          "Never log: GPS coordinates, display names, passkeys, auth tokens, FCM tokens",
+          "Flutter: firebase_crashlytics — catch all uncaught exceptions via FlutterError.onError and Zone.runZonedGuarded",
+          "Crashlytics custom keys: session_id (hashed, not raw), app_version, build_flavor — never user PII",
+          "Sentry (backend): capture exceptions with request context, redact headers and body params matching coordinate/token patterns",
+          "Correlation: mobile logs request_id in Dio interceptor header, backend logs it — enables tracing across mobile + API + WS",
+          "Structured log aggregation: ship to Cloud Logging / Datadog via log driver"
+        ],
+        security: ["Log sanitizer: regex strip patterns for lat/lng, tokens, passkeys before any external log shipping", "Crashlytics must not log user-identifiable data — use hashed session IDs only"],
+        perf: [],
+        test: ["Test log sanitizer: inject a coordinate string → verify it is redacted in output", "Test Crashlytics captures uncaught exception with correct custom keys"],
+        run: "cat logs/app.log | jq . | grep -v 'lat\\|lng\\|token'  # Verify no coordinate leakage",
+        debug: "Structured log malformed: check structlog bound context is reset per request in middleware",
+        dod: ["Log audit: grep for 'lat', 'lng', 'passkey', 'token' across 1000 test log lines — 0 matches", "Crashlytics test crash appears in Firebase console within 2 minutes"],
+        commit: "feat: add structured logging with pii sanitization and crashlytics integration"
+      },
+      {
+        num: "27",
+        name: "Metrics & Alerting",
+        obj: "Production visibility with SLO-based alerts",
+        tags: ["perf"],
+        tasks: [
+          "Prometheus metrics: active_sessions_total, active_connections_total, ws_broadcast_latency_histogram, location_updates_per_second",
+          "Grafana dashboard: session count, WS connection count, broadcast latency p50/p95/p99, Redis memory usage",
+          "SLO definitions: WS broadcast latency p95 < 200ms, session create success rate > 99.5%, error rate < 0.1%",
+          "Alerts: PagerDuty / Slack — trigger on SLO breach for 5 consecutive minutes",
+          "Redis memory alert: warn at 70% maxmemory, critical at 85% (trigger maxmemory-policy allkeys-lru)",
+          "Flutter: custom analytics events (session_created, session_joined, privacy_mode_changed) — Firebase Analytics, no GPS in event params",
+          "Uptime monitoring: Checkly synthetic monitor on /health endpoint every 60s"
+        ],
+        security: ["Analytics events must not include session IDs, user IDs, or location data in params"],
+        perf: [],
+        test: ["Load test and verify Grafana dashboard shows correct broadcast latency", "Trigger SLO breach manually — verify PagerDuty alert fires within 5 minutes"],
+        run: "docker compose up prometheus grafana  # Local observability stack",
+        debug: "Prometheus scrape failing: check /metrics endpoint exposed on non-public port, scrape target configured in prometheus.yml",
+        dod: ["Grafana dashboard shows real-time WS latency, session count, Redis memory", "SLO alert fires in test", "Analytics events contain zero PII (Firebase DebugView verified)"],
+        commit: "feat: add prometheus metrics, grafana dashboards, and slo-based alerting"
+      }
+    ]
+  },
+  {
+    id: "deployment",
+    label: "09 · Deployment",
+    title: "Deployment & Release Automation",
+    steps: [
+      {
+        num: "28",
+        name: "Backend Containerization & Deployment",
+        obj: "Production-hardened Docker image with zero-downtime deployment",
+        tags: ["sec"],
+        tasks: [
+          "Dockerfile: multi-stage build — builder (install deps) + runtime (python:3.12-slim, non-root user, no dev deps)",
+          "Image size target: < 200MB — use slim base, no build tools in runtime stage",
+          "docker-compose.prod.yml: FastAPI (2 replicas), Redis (with AOF persistence), Nginx reverse proxy (SSL termination, WebSocket upgrade headers)",
+          "Kubernetes Helm chart (or docker-compose for MVP): readiness probe on /health, liveness probe, resource limits",
+          "Rolling deploy: Kubernetes rolling update with maxUnavailable: 0 — zero downtime",
+          "Redis: deploy with AOF persistence enabled (appendonly yes) — data survives container restart within session TTL window",
+          "Nginx: configure WebSocket proxy with proxy_read_timeout 3600s, proxy_send_timeout 3600s",
+          "GitHub Actions deploy.yml: on merge to main → build → push to registry → trigger deployment"
+        ],
+        security: ["Non-root user in container (USER 1000:1000)", "No secrets in Dockerfile or image layers — mount from secret manager at runtime", "Trivy image scan must pass before push to registry", "Network policy: FastAPI container only accessible via Nginx, Redis only accessible from FastAPI"],
+        perf: ["Enable HTTP/2 in Nginx for API endpoints", "Uvicorn: workers = CPU cores × 2, enable keepalive"],
+        test: ["Smoke test after deploy: /health returns 200, create session returns valid response", "Verify rolling deploy: no 502s during deploy (measure with Checkly)"],
+        run: "docker build -t radarapp-backend:latest . && docker compose -f docker-compose.prod.yml up",
+        debug: "WebSocket 101 upgrade fails through Nginx: verify 'proxy_http_version 1.1' and 'Upgrade/Connection' headers in nginx.conf",
+        dod: ["Image built, scanned (0 critical CVEs), pushed to registry", "Rolling deploy shows 0 downtime in Checkly monitor", "Redis AOF enabled and verified by restart test"],
+        commit: "build: add production docker multi-stage build with nginx, redis persistence, and rolling deploy"
+      },
+      {
+        num: "29",
+        name: "Mobile Release Pipeline",
+        obj: "Automated signed production builds to Play Store and App Store via Fastlane",
+        tags: [],
+        tasks: [
+          "Android: Fastlane supply lane — build signed AAB (not APK) with keystore from CI secrets, upload to Play Store production track",
+          "iOS: Fastlane deliver lane — build IPA with Fastlane Match certs, upload to App Store",
+          "Version management: semantic versioning, auto-increment build number from git commit count (flutter pub version bump)",
+          "Release notes: auto-generated from git log since last tag, trimmed to 500 chars for store",
+          "Single release lane on git tag v*.*.* for production deployment",
+          "Code signing: Fastlane Match in readonly mode for CI, appstore and adhoc provisioning profiles",
+          "GitHub release: create GH release on tag push with changelog and attached artifacts"
+        ],
+        security: ["Keystore password and Match passphrase in GitHub encrypted secrets, never in Fastfile", "Verify APK/IPA signature before upload"],
+        perf: [],
+        test: ["Verify production build installable on a physical device before release approval", "Run full E2E test before promoting to production"],
+        run: "bundle exec fastlane release  # Triggers release lane",
+        debug: "Match cert sync fails: run match nuke and re-create certs (only when expired, not routine)",
+        dod: ["Git tag triggers signed production release automatically", "Production release requires manual approval in GitHub Actions"],
+        commit: "ci: add fastlane mobile release pipeline for android and ios with automated signing"
+      }
+    ]
+  },
+  {
+    id: "hardening",
+    label: "10 · Hardening",
+    title: "Production Hardening",
+    steps: [
+      {
+        num: "30",
+        name: "Feature Flags & Error Handling",
+        obj: "Safe rollout mechanism and resilient error recovery",
+        tags: [],
+        tasks: [
+          "Feature flags: Firebase Remote Config — flag keys: chat_enabled_global, max_session_size, proximity_alert_threshold_meters, radar_radius_meters",
+          "Flutter: fetch Remote Config on app foreground, apply without restart for config flags, require restart for structural flags",
+          "Fallback values: every Remote Config key has hardcoded default — app works offline without Remote Config",
+          "Error handling hierarchy: network error → retry with backoff → offline mode; WS disconnect → reconnect loop → snapshot fallback; session not found → clear cache → home screen",
+          "Retry logic: exponential backoff with jitter for all network calls (max 3 retries, 30s cap)",
+          "Dead letter queue: failed FCM sends added to Redis list for retry, processed by background job",
+          "Session expiry grace: if backend returns 404 for session, check if within 30-second grace window before declaring expired",
+          "User-facing error messages: map domain exceptions to human-readable strings in ErrorMessages class — never expose HTTP codes or stack traces to users"
+        ],
+        security: [],
+        perf: ["Remote Config fetch cached for 1 hour in production — no per-request flag checks"],
+        test: ["Test fallback: disable Remote Config (offline mode) → verify hardcoded defaults applied", "Test retry: mock 3 failures → verify retry fires with backoff → succeeds on 4th"],
+        run: "flutter test test/core/error_handling/ --coverage",
+        debug: "Remote Config not updating: check minimum fetch interval is not throttled (set to 0 in debug mode)",
+        dod: ["App works with no network after session join (cached state)", "All network errors show user-friendly message, never technical details", "Retry mechanism tested to 3 failures + 1 success"],
+        commit: "feat: add feature flags via firebase remote config and resilient error handling with retry logic"
+      },
+      {
+        num: "31",
+        name: "Rate Limiting & API Protection",
+        obj: "Server-side request throttling and abuse prevention",
+        tags: ["sec"],
+        tasks: [
+          "Backend rate limiting: slowapi (fastapi-limiter) — per IP, per user_id where applicable",
+          "Limits: POST /sessions → 5/min per IP; GET /verify → 20/min per IP; WS location updates → 1/s per user_id (server-side drop excess)",
+          "WS message rate: maintain per-user message counter in Redis with 1s TTL INCR — if > 5 messages/s: drop message and send RATE_LIMITED response",
+          "Bot protection on web fallback: Cloudflare Turnstile on web join page",
+          "Request size limits: FastAPI body limit 10KB (location update payload should never exceed 1KB)",
+          "IP blocklist: Redis SET of blocked IPs, checked in middleware before rate limit — instant block",
+          "Abuse detection: log_suspicious_activity if single IP hits rate limit > 10 times in 60s → auto-block for 1 hour"
+        ],
+        security: ["Rate limit state stored in Redis — survives backend restart, works across multiple instances", "Rate limit headers in response: X-RateLimit-Remaining, X-RateLimit-Reset"],
+        perf: ["Rate limit check adds ~1ms to request — acceptable overhead"],
+        test: ["Test: 6 requests in 1 minute to /sessions → 6th returns 429 with Retry-After header", "Test: WS > 5 messages/s → excess dropped with RATE_LIMITED message"],
+        run: "hey -n 100 -c 10 -m POST http://localhost:8000/api/v1/sessions  # Verify rate limiting kicks in",
+        debug: "Rate limit not persisting: verify Redis connection in slowapi dependency, check Redis key expiry with TTL command",
+        dod: ["Rate limit test passes: 6th request → 429 with Retry-After", "WS rate limit: confirmed by load test — excess messages dropped, not queued", "Rate limit headers present on all limited endpoints"],
+        commit: "security: add rate limiting, request size limits, and abuse detection to api and websocket endpoints"
+      },
+      {
+        num: "32",
+        name: "Data Retention & GDPR Compliance",
+        obj: "Zero-trace session deletion and privacy-by-design enforcement",
+        tags: ["sec"],
+        tasks: [
+          "Session termination cascade: DEL pipeline for all session keys — session:{id}, members, locations, chat, path — verified with KEYS scan post-delete",
+          "TTL failsafe: all session Redis keys have 12h TTL — automatic expiry even if admin never terminates",
+          "User leave: ZREM from GeoSet, HDEL user:{id} current_session, remove from member roster",
+          "No persistent user database — confirmed by architecture (Redis-only, no SQL, no user table)",
+          "Privacy policy endpoint: GET /privacy — returns data processing statement for App Store compliance",
+          "App Store compliance: NSLocationAlwaysAndWhenInUseUsageDescription, NSLocationWhenInUseUsageDescription — clear, specific descriptions",
+          "Data minimization audit: confirm no logs contain GPS coordinates (automated grep in CI post-deploy)",
+          "User consent flow: location permission primer screen constitutes informed consent — copy reviewed by legal"
+        ],
+        security: ["Post-session DEL must be atomic — partial delete leaves orphaned data", "Log retention: application logs stored 30 days max, purged automatically"],
+        perf: [],
+        test: ["Test session termination: create session, add 10 users, terminate — verify 0 Redis keys remain with pattern scan", "TTL test: create session, advance Redis time 13h — verify all keys gone"],
+        run: "redis-cli --scan --pattern 'session:test_*' | xargs redis-cli del  # Manual cleanup test",
+        debug: "Keys remain after session delete: check pipeline exec() is called, verify all key patterns included in DEL pipeline",
+        dod: ["Post-termination Redis KEYS scan returns 0 matches for session", "TTL expiry test passes: all session keys gone after 12h", "CI log audit: 0 coordinate patterns in log output"],
+        commit: "security: implement zero-trace session deletion with cascade, ttl failsafe, and gdpr data minimization"
+      }
+    ]
+  },
+  {
+    id: "docs",
+    label: "11 · Docs & Launch",
+    title: "Documentation & Production Launch",
+    steps: [
+      {
+        num: "33",
+        name: "API Documentation",
+        obj: "Auto-generated OpenAPI docs with security schemes and example payloads",
+        tags: [],
+        tasks: [
+          "FastAPI auto-generates /docs (Swagger UI) and /redoc — enriched with response models, error schemas, example payloads",
+          "All endpoints documented: summary, description, request/response body with examples, possible error codes",
+          "Authentication scheme in OpenAPI: BearerAuth security scheme — all protected endpoints annotated",
+          "WebSocket protocol doc: /docs/websocket-protocol.md — all message types with JSON schema examples",
+          "Rate limit documentation: document limits in OpenAPI description, Retry-After header format",
+          "SDK generation: generate typed Python + Dart clients from OpenAPI spec (openapi-generator) — used in tests",
+          "Changelog: CHANGELOG.md maintained with conventional-changelog-cli"
+        ],
+        security: [],
+        perf: [],
+        test: ["Verify: every endpoint appears in /docs with correct response schema", "Generated Dart client compiles without errors"],
+        run: "open http://localhost:8000/docs",
+        debug: "Missing endpoint in docs: add response_model to FastAPI route decorator",
+        dod: ["All endpoints documented with examples", "WebSocket protocol doc complete", "OpenAPI spec exports without validation errors"],
+        commit: "docs: add openapi documentation, websocket protocol spec, and api changelog"
+      },
+      {
+        num: "34",
+        name: "Architecture & Setup Documentation",
+        obj: "Onboarding docs enabling new engineer to run full stack in < 30 minutes",
+        tags: [],
+        tasks: [
+          "README.md: project overview, architecture diagram (Mermaid), quick start (clone → bootstrap → run), required env variables",
+          "ARCHITECTURE.md: system components, data flow, Redis schema reference, WebSocket message protocol, privacy enforcement model",
+          "CONTRIBUTING.md: branch strategy, commit convention, PR checklist, test requirements",
+          "docs/runbooks/: session-stuck.md, redis-memory-high.md, ws-connections-spiking.md — operational runbooks for on-call",
+          "Flutter: FLUTTER_SETUP.md — required Flutter version, flavor config, device setup for development",
+          "Backend: BACKEND_SETUP.md — Python version, Poetry, Docker, Redis local setup",
+          "API environment reference: docs/env-reference.md — all env vars with type, required flag, example, description"
+        ],
+        security: [],
+        perf: [],
+        test: ["New engineer dry run: follow README, time to running app — must be < 30 minutes"],
+        run: "# Follow README.md — time yourself",
+        debug: "",
+        dod: ["README to running app < 30 minutes on a fresh machine (verified by team member dry run)", "All runbooks reviewed by on-call engineer", "Architecture diagram updated to reflect final system"],
+        commit: "docs: add architecture documentation, runbooks, setup guides, and contributing guide"
+      },
+      {
+        num: "35",
+        name: "Production Launch Checklist",
+        obj: "Pre-launch verification: security, performance, stores, monitoring",
+        tags: ["sec", "perf"],
+        tasks: [
+          "Security: MobSF scan 0 critical/high, ZAP scan 0 high, no secrets in git (trufflehog), rate limits verified in staging",
+          "Performance: Locust 100 users < 2% error rate, Flutter DevTools < 4ms frame time on RadarView, battery test < 15% per 30 min",
+          "Store submission: App Store Connect metadata (screenshots, description, privacy policy URL, App Privacy labels for location), Google Play Console (store listing, content rating, data safety form)",
+          "Privacy policy hosted at radarapp.io/privacy — covers: what data collected, retention (session only), no third-party sharing",
+          "Monitoring: Grafana dashboards live, PagerDuty escalation policy configured, Checkly uptime monitor active",
+          "Rollback plan: documented procedure for backend rollback (previous Docker image tag), mobile rollback (halt staged rollout in stores)",
+          "Feature flags: all new features initially behind Remote Config flags (enable_chat: false for initial rollout)",
+          "Staged rollout: Android 10% rollout, iOS 100% (App Store does not support staged rollout natively — use Remote Config gating)"
+        ],
+        security: ["Final security review: architecture review with security-focused checklist", "Pen test sign-off required before production traffic"],
+        perf: ["Load test at 2× expected peak traffic before launch"],
+        test: ["All items in this checklist verified by independent team member", "Smoke test on production environment (not staging)"],
+        run: "# Execute each checklist item in /docs/launch-checklist.md",
+        debug: "",
+        dod: ["All checklist items checked off and signed by team lead", "Production environment healthy for 24h before public launch announcement"],
+        commit: "docs: add production launch checklist and pre-launch verification sign-offs"
+      }
+    ]
+  }
+];
+
+let activePhase = 0;
+
+function renderNav() {
+  const nav = document.getElementById('phaseNav');
+  nav.innerHTML = phases.map((p, i) => 
+    `<button class="phase-btn ${i === activePhase ? 'active' : ''}" onclick="setPhase(${i})">${p.label}</button>`
+  ).join('');
+}
+
+function setPhase(i) {
+  activePhase = i;
+  renderNav();
+  renderSteps();
+}
+
+function renderSteps() {
+  const container = document.getElementById('stepsContainer');
+  const phase = phases[activePhase];
+  
+  container.innerHTML = `
+    <div class="phase-header">
+      <span class="phase-badge">PHASE ${String(activePhase + 1).padStart(2, '0')}</span>
+      <span class="phase-title">${phase.title}</span>
+    </div>
+    ${phase.steps.map((s, idx) => renderStep(s, idx)).join('')}
+  `;
+}
+
+function renderStep(s, idx) {
+  const secTag = s.security && s.security.length ? `<span class="tag sec">SEC</span>` : '';
+  const perfTag = s.tags.includes('perf') ? `<span class="tag perf">PERF</span>` : '';
+  const testTag = s.tags.includes('test') ? `<span class="tag test">TEST</span>` : '';
+  
+  const tasksList = s.tasks.map(t => `<li>${t}</li>`).join('');
+  const secList = s.security && s.security.length ? s.security.map(t => `<li>${t}</li>`).join('') : '';
+  const perfList = s.perf && s.perf.length ? s.perf.map(t => `<li>${t}</li>`).join('') : '';
+  
+  const dodItems = s.dod ? s.dod.map(d => `
+    <div class="dod-item"><span class="dod-check">✓</span><span>${d}</span></div>
+  `).join('') : '';
+
+  return `
+    <div class="step-card" id="step-${s.num}">
+      <div class="step-header" onclick="toggleStep('step-${s.num}')">
+        <span class="step-num">STEP ${s.num}</span>
+        <div class="step-title-block">
+          <div class="step-name">${s.name}</div>
+          <div class="step-obj">${s.obj}</div>
+        </div>
+        <div class="step-tags">${secTag}${perfTag}${testTag}</div>
+        <svg class="chevron" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M4 6l4 4 4-4"/>
+        </svg>
+      </div>
+      <div class="step-body">
+        <div class="section-label">Engineering Tasks</div>
+        <ul class="task-list">${tasksList}</ul>
+        
+        ${secList ? `<div class="section-label">Security Considerations</div><ul class="task-list">${secList}</ul>` : ''}
+        ${perfList ? `<div class="section-label">Performance Considerations</div><ul class="task-list">${perfList}</ul>` : ''}
+        
+        ${s.run ? `<div class="section-label">How to Run</div><div class="code-block">${s.run}</div>` : ''}
+        ${s.debug ? `<div class="section-label">Debug Notes</div><div class="code-block">${s.debug}</div>` : ''}
+        
+        ${dodItems ? `<div class="section-label">Definition of Done</div><div class="dod-block">${dodItems}</div>` : ''}
+        
+        ${s.commit ? `<div class="section-label">Git Commit</div><div class="commit-block">${s.commit}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+function toggleStep(id) {
+  const card = document.getElementById(id);
+  card.classList.toggle('open');
+}
+
+renderNav();
+renderSteps();
+</script>
