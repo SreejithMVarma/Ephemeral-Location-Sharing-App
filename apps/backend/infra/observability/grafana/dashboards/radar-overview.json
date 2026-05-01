@@ -1,0 +1,34 @@
+{
+  "id": null,
+  "uid": "radar-overview",
+  "title": "Radar Backend Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Active Sessions",
+      "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+      "targets": [{"expr": "active_sessions_total", "refId": "A"}]
+    },
+    {
+      "type": "stat",
+      "title": "Active Connections",
+      "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+      "targets": [{"expr": "active_connections_total", "refId": "A"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "WS Broadcast Latency p95",
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [{"expr": "histogram_quantile(0.95, sum(rate(ws_broadcast_latency_seconds_bucket[5m])) by (le))", "refId": "A"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Location Updates / sec",
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [{"expr": "rate(location_updates_per_second_total[1m])", "refId": "A"}]
+    }
+  ]
+}
