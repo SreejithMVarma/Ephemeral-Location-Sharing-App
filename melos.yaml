@@ -1,0 +1,9 @@
+name: ephemeral_radar
+packages:
+  - apps/mobile
+  - packages/**
+
+scripts:
+  bootstrap:
+    run: flutter pub get
+    description: Bootstrap Flutter dependencies in workspace
