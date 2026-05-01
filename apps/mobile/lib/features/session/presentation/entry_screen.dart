@@ -112,9 +112,6 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
                     const SizedBox(height: AppSpacing.lg),
                     ref.watch(sessionHistoryProvider).when(
                       data: (history) {
-                        if (history.isEmpty) {
-                          return const SizedBox.shrink();
-                        }
                         return _stagger(
                           5,
                           child: Column(
@@ -128,13 +125,34 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
                                 ),
                               ),
                               const SizedBox(height: AppSpacing.sm),
-                              ...history.map((session) => _SessionHistoryItem(
-                                session: session,
-                                onRejoin: () {
-                                  HapticFeedback.lightImpact();
-                                  context.push('/join?s=${session.sessionId}&p=${session.authToken}');
-                                },
-                              )),
+                              if (history.isEmpty)
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(AppSpacing.md),
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: AppColors.textDim.withValues(alpha: 0.3),
+                                      width: 1,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'No recent sessions',
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: AppColors.textDim,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                ...history.map((session) => _SessionHistoryItem(
+                                  session: session,
+                                  onRejoin: () {
+                                    HapticFeedback.lightImpact();
+                                    context.push('/join?s=${session.sessionId}&p=${session.authToken}');
+                                  },
+                                )),
                             ],
                           ),
                         );
