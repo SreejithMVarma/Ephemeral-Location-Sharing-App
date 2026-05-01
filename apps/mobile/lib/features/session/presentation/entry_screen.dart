@@ -10,6 +10,7 @@ import '../../../core/widgets/radar_button.dart';
 import '../../../core/widgets/radar_card.dart';
 import '../../../core/widgets/radar_snackbar.dart';
 import '../application/rejoin_service.dart';
+import '../domain/session_cache.dart';
 
 class EntryScreen extends ConsumerStatefulWidget {
   const EntryScreen({super.key});
@@ -44,7 +45,6 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
-    final rejoin = ref.watch(rejoinCacheProvider);
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -110,28 +110,32 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
                       ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    rejoin.when(
-                      data: (cache) {
-                        if (cache == null) {
+                    ref.watch(sessionHistoryProvider).when(
+                      data: (history) {
+                        if (history.isEmpty) {
                           return const SizedBox.shrink();
                         }
                         return _stagger(
                           5,
-                          child: RadarCard(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text('Rejoin: ${cache.sessionName}', style: AppTypography.body),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'RECENT SESSIONS',
+                                style: textTheme.labelSmall?.copyWith(
+                                  letterSpacing: 1.5,
+                                  color: AppColors.blue,
                                 ),
-                                TextButton(
-                                  onPressed: () {
-                                    context.push('/join?s=${cache.sessionId}&p=rejoin');
-                                  },
-                                  child: const Text('Rejoin'),
-                                ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              ...history.map((session) => _SessionHistoryItem(
+                                session: session,
+                                onRejoin: () {
+                                  HapticFeedback.lightImpact();
+                                  context.push('/join?s=${session.sessionId}&p=${session.authToken}');
+                                },
+                              )),
+                            ],
                           ),
                         );
                       },
@@ -270,4 +274,107 @@ class _HeroRadarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _HeroRadarPainter oldDelegate) => oldDelegate.sweep != sweep;
+}
+
+class _SessionHistoryItem extends StatelessWidget {
+  const _SessionHistoryItem({
+    required this.session,
+    required this.onRejoin,
+  });
+
+  final SessionCache session;
+  final VoidCallback onRejoin;
+
+  String _formatTimeAgo(String joinedAtStr) {
+    try {
+      final joinedAt = DateTime.parse(joinedAtStr);
+      final now = DateTime.now();
+      final diff = now.difference(joinedAt);
+      
+      if (diff.inMinutes < 1) {
+        return 'just now';
+      } else if (diff.inHours < 1) {
+        return '${diff.inMinutes}m ago';
+      } else if (diff.inDays < 1) {
+        return '${diff.inHours}h ago';
+      } else if (diff.inDays < 7) {
+        return '${diff.inDays}d ago';
+      } else {
+        return joinedAtStr.split('T')[0];
+      }
+    } catch (e) {
+      return 'unknown';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final timeAgo = _formatTimeAgo(session.joinedAt);
+    
+    return GestureDetector(
+      onTap: onRejoin,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.md),
+        decoration: BoxDecoration(
+          color: AppColors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border: Border.all(
+            color: AppColors.blue.withValues(alpha: 0.3),
+            width: 0.8,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    session.sessionName,
+                    style: textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Joined $timeAgo',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: AppColors.textDim,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.blue.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(AppRadius.button),
+                border: Border.all(
+                  color: AppColors.blue.withValues(alpha: 0.5),
+                  width: 0.8,
+                ),
+              ),
+              child: Text(
+                'Rejoin',
+                style: textTheme.labelSmall?.copyWith(
+                  color: AppColors.blue,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

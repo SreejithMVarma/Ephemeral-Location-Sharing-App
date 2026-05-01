@@ -31,3 +31,9 @@ final rejoinCacheProvider = FutureProvider<SessionCache?>((ref) async {
   }
   return cache;
 });
+
+/// Provider for session history (all previously joined sessions, sorted by most recent first)
+final sessionHistoryProvider = FutureProvider<List<SessionCache>>((ref) async {
+  final storage = await ref.watch(localStorageServiceProvider.future);
+  return storage.readSessionHistory();
+});

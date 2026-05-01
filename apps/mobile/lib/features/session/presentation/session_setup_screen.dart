@@ -7,7 +7,9 @@ import '../../../core/error_handling/retry.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/radar_button.dart';
 import '../../../core/widgets/radar_text_field.dart';
+import '../application/rejoin_service.dart';
 import '../application/session_state.dart';
+import '../domain/session_cache.dart';
 import '../infrastructure/network_providers.dart';
 
 class SessionSetupScreen extends ConsumerStatefulWidget {
@@ -83,6 +85,18 @@ class _SessionSetupScreenState extends ConsumerState<SessionSetupScreen> {
         userId: adminId,
         displayName: displayName,
         privacyMode: 'full_map',
+      );
+
+      // Save to local storage history with timestamp
+      final storage = await ref.read(localStorageServiceProvider.future);
+      final now = DateTime.now().toIso8601String();
+      await storage.saveSession(
+        SessionCache(
+          sessionId: adminId,
+          authToken: adminId, // Use admin ID as token for creator
+          sessionName: sessionName,
+          joinedAt: now,
+        ),
       );
 
       if (!mounted) {

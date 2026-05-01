@@ -7,7 +7,9 @@ import '../../../core/error_handling/retry.dart';
 import '../../../core/telemetry/telemetry_service.dart';
 import '../../auth/application/auth_state.dart';
 import '../application/privacy_providers.dart';
+import '../application/rejoin_service.dart';
 import '../application/session_state.dart';
+import '../domain/session_cache.dart';
 import '../infrastructure/network_providers.dart';
 
 import '../../../core/widgets/radar_button.dart';
@@ -97,6 +99,19 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
       );
 
       notifications.bindTokenRefresh(sessionId: widget.sessionId, userId: userId);
+      
+      // Save to local storage history with timestamp
+      final storage = await ref.read(localStorageServiceProvider.future);
+      final joinedAtNow = DateTime.now().toIso8601String();
+      await storage.saveSession(
+        SessionCache(
+          sessionId: widget.sessionId,
+          authToken: widget.passkey,
+          sessionName: sessionName,
+          joinedAt: joinedAtNow,
+        ),
+      );
+      
       await TelemetryService.logEvent(
         'session_joined',
         parameters: {
