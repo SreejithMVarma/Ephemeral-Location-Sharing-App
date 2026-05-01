@@ -147,7 +147,7 @@ class _WaitingRoomScreenState extends ConsumerState<WaitingRoomScreen> {
                         label: 'Launch Radar',
                         onPressed: () {
                           HapticFeedback.mediumImpact();
-                          context.go('/radar');
+                          context.push('/radar');
                         },
                       ),
                     ],

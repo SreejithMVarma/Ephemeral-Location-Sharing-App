@@ -79,7 +79,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
       ref.read(isAuthenticatedProvider.notifier).state = true;
 
       if (mounted) {
-        context.go('/radar');
+        context.push('/radar');
       }
     } catch (error) {
       if (mounted) {

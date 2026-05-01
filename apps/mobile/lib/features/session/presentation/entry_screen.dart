@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/animations/app_animations.dart';
 import '../../../main.dart';
 import '../../../core/theme/app_tokens.dart';
-import '../../../core/widgets/radar_bottom_sheet.dart';
 import '../../../core/widgets/radar_button.dart';
 import '../../../core/widgets/radar_card.dart';
 import '../../../core/widgets/radar_snackbar.dart';
@@ -104,132 +102,8 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
                             label: 'Scan to Join',
                             variant: RadarButtonVariant.secondary,
                             onPressed: () {
-                              var handlingScan = false;
-                              final controller = MobileScannerController(
-                                cameraResolution: const Size(1920, 1080),
-                                detectionSpeed: DetectionSpeed.noDuplicates,
-                                formats: const [BarcodeFormat.qrCode],
-                                autoZoom: true,
-                                lensType: CameraLensType.normal,
-                              );
-                              RadarBottomSheet.show(
-                                context,
-                                SizedBox(
-                                  height: 420,
-                                  child: MobileScanner(
-                                    controller: controller,
-                                    onDetect: (capture) async {
-                                      if (handlingScan) {
-                                        return;
-                                      }
-                                      try {
-                                        if (capture.barcodes.isEmpty) {
-                                          return;
-                                        }
-
-                                        final raw = capture.barcodes.first.rawValue;
-                                        debugPrint('[Scanner] raw QR scanned: $raw');
-                                        if (raw == null || raw.isEmpty) {
-                                          debugPrint('[Scanner] QR value is empty');
-                                          return;
-                                        }
-
-                                        final uri = Uri.tryParse(raw);
-                                        if (uri == null) {
-                                          debugPrint('[Scanner] failed to parse URI: $raw');
-                                          RadarSnackbar.show(
-                                            context,
-                                            message: 'Malformed deep link',
-                                            type: RadarSnackType.warning,
-                                          );
-                                          return;
-                                        }
-
-                                        debugPrint('[Scanner] parsed URI: $uri');
-                                        debugPrint('[Scanner] URI scheme: ${uri.scheme}');
-                                        debugPrint('[Scanner] URI host: ${uri.host}');
-                                        debugPrint('[Scanner] URI path: ${uri.path}');
-
-                                        final config = ref.read(appConfigProvider);
-                                        debugPrint('[Scanner] expected deep link scheme: ${config.deepLinkScheme}');
-
-                                        // Check if scheme is valid: custom scheme OR http/https
-                                        final schemeOk = uri.scheme.isNotEmpty && (
-                                          (config.deepLinkScheme.isNotEmpty && uri.scheme == config.deepLinkScheme) ||
-                                          uri.isScheme('http') || 
-                                          uri.isScheme('https')
-                                        );
-
-                                        if (!schemeOk) {
-                                          debugPrint('[Scanner] ❌ rejected: invalid scheme "${uri.scheme}" (expected: "${config.deepLinkScheme}")');
-                                          RadarSnackbar.show(
-                                            context,
-                                            message: 'Invalid QR code scheme',
-                                            type: RadarSnackType.warning,
-                                          );
-                                          return;
-                                        }
-
-                                        debugPrint('[Scanner] ✓ scheme is valid');
-
-                                        // Check if this is a join target
-                                        final isJoinTarget =
-                                            uri.host == 'join' ||
-                                            uri.path == '/join' ||
-                                            uri.path == 'join';
-
-                                        debugPrint('[Scanner] is join target: $isJoinTarget');
-
-                                        // Extract parameters
-                                        final sessionId = uri.queryParameters['s'];
-                                        final passkey = uri.queryParameters['p'];
-                                        final region = uri.queryParameters['r'] ?? 'us-east';
-
-                                        debugPrint('[Scanner] session_id: $sessionId');
-                                        debugPrint('[Scanner] passkey: ${passkey != null ? '[REDACTED]' : 'null'}');
-                                        debugPrint('[Scanner] region: $region');
-
-                                        // Validate required parameters
-                                        final hasJoinParams =
-                                            sessionId != null &&
-                                            sessionId.isNotEmpty &&
-                                            passkey != null &&
-                                            passkey.isNotEmpty;
-
-                                        if (!isJoinTarget || !hasJoinParams) {
-                                          debugPrint('[Scanner] ❌ rejected: invalid join target or missing params');
-                                          RadarSnackbar.show(
-                                            context,
-                                            message: 'Invalid radar code',
-                                            type: RadarSnackType.warning,
-                                          );
-                                          return;
-                                        }
-
-                                        debugPrint('[Scanner] ✅ valid radar code - navigating to join with s=$sessionId, p=[REDACTED], r=$region');
-                                        handlingScan = true;
-
-                                        // Stop the camera before navigating to avoid races
-                                        await controller.stop();
-                                        if (context.mounted) {
-                                          context.pop();
-                                          // Navigate with all parameters
-                                          context.push('/join?s=$sessionId&p=$passkey&r=$region');
-                                        }
-                                      } catch (e, st) {
-                                        debugPrint('[Scanner] ❌ error: $e\n$st');
-                                      }
-                                    },
-                                  ),
-                                ),
-                              ).whenComplete(() async {
-                                try {
-                                  await controller.stop();
-                                } catch (_) {
-                                  // Ignore stop errors during teardown.
-                                }
-                                controller.dispose();
-                              });
+                              HapticFeedback.lightImpact();
+                              context.push('/scan-qr');
                             },
                           ),
                         ],
