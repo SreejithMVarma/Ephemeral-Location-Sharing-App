@@ -1,0 +1,17 @@
+{
+  "name": "ephemeral-radar-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "prepare": "husky",
+    "mobile:dev": "cd apps/mobile && flutter run --dart-define-from-file=env/dev.json",
+    "mobile:dev:phone": "adb reverse tcp:8000 tcp:8000 && cd apps/mobile && flutter run --dart-define-from-file=env/dev.phone.json",
+    "dev:phone": "powershell -ExecutionPolicy Bypass -File scripts/dev_phone.ps1",
+    "mobile:prod": "cd apps/mobile && flutter run --dart-define-from-file=env/prod.json"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "husky": "^9.1.7"
+  }
+}
