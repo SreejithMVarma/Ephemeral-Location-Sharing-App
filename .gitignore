@@ -1,0 +1,134 @@
+# ==================
+# ENVIRONMENT & SECRETS
+# ==================
+.env
+.env.*
+!.env.example
+.env.local
+.env.*.local
+.secrets*
+*.keystore
+*.jks
+GoogleService-Info.plist
+google-services.json
+
+# ==================
+# FLUTTER / DART
+# ==================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+.pub-cache/
+build/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+android/.gradle/
+android/gradle/
+android/build/
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/key.properties
+*.iml
+.idea/
+.metadata
+
+# Mobile generated files
+*.apk
+*.app
+*.ipa
+*.exe
+*.zip
+*.so
+*.dylib
+
+# ==================
+# PYTHON
+# ==================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+*.prof
+.venv/
+venv/
+ENV/
+env/
+.venv*
+
+# ==================
+# IDE & EDITOR
+# ==================
+.idea/
+.vscode/
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# ==================
+# NODE & NPM
+# ==================
+node_modules/
+.npm/
+package-lock.json
+yarn.lock
+npm-debug.log
+
+# ==================
+# TEMPORARY & LOG FILES
+# ==================
+*.log
+*.tmp
+*.bak
+*.swp
+temp/
+tmp/
+.cache/
+phone-log*.txt
+ui_smoke_*.png
+repomix-output.txt
+*-output.txt
+
+# ==================
+# DOCS & BUILD ARTIFACTS
+# ==================
+docs/.build/
+*.pdf
+# Note: Keep important docs, but ignore build artifacts
+
+# ==================
+# OS
+# ==================
+.DS_Store
+Thumbs.db
+*.lnk
+
+# ==================
+# FASTLANE
+# ==================
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
