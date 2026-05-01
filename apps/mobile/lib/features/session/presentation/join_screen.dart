@@ -7,6 +7,7 @@ import '../../../core/error_handling/retry.dart';
 import '../../../core/telemetry/telemetry_service.dart';
 import '../../auth/application/auth_state.dart';
 import '../application/privacy_providers.dart';
+import '../application/session_state.dart';
 import '../infrastructure/network_providers.dart';
 
 import '../../../core/widgets/radar_button.dart';
@@ -28,7 +29,7 @@ class JoinScreen extends ConsumerStatefulWidget {
 }
 
 class _JoinScreenState extends ConsumerState<JoinScreen> {
-  final TextEditingController _nameController = TextEditingController(text: 'Explorer');
+  final TextEditingController _nameController = TextEditingController();
   PrivacyMode _preJoinMode = PrivacyMode.directionDistance;
   bool _loading = false;
 
@@ -41,6 +42,9 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
   Future<void> _joinSession() async {
     final displayName = _nameController.text.trim();
     if (displayName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your name')),
+      );
       return;
     }
 
@@ -57,7 +61,8 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
       await notifications.requestJoinPermission();
       final token = await notifications.currentToken();
 
-      await retryWithBackoff(
+      // Join the session
+      final joinResponse = await retryWithBackoff(
         task: () => api.postJson(
           '/api/v1/sessions/${widget.sessionId}/join',
           body: {
@@ -67,6 +72,28 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
             if (token != null && token.isNotEmpty) 'fcm_token': token,
           },
         ),
+      );
+
+      // Fetch session info to get the session name
+      final verifyResponse = await retryWithBackoff(
+        task: () => api.getJson(
+          '/api/v1/sessions/verify',
+          query: {
+            's': widget.sessionId,
+            'p': widget.passkey,
+          },
+        ),
+      );
+
+      final sessionName = (verifyResponse['session_name'] as String?) ?? 'Unnamed session';
+
+      // Save session state
+      ref.read(sessionStateProvider.notifier).setSession(
+        sessionId: widget.sessionId,
+        sessionName: sessionName,
+        userId: userId,
+        displayName: displayName,
+        privacyMode: _preJoinMode.name,
       );
 
       notifications.bindTokenRefresh(sessionId: widget.sessionId, userId: userId);
@@ -107,13 +134,10 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Join via deep link', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              Text('Session: ${widget.sessionId}'),
-              Text('Passkey: ${widget.passkey}'),
+              Text('Enter your name', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 12),
               RadarTextField(
-                label: 'Display Name',
+                label: 'YOUR NAME',
                 controller: _nameController,
               ),
               const SizedBox(height: 16),

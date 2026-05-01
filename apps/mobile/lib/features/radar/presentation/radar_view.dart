@@ -8,6 +8,7 @@ import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/radar_card.dart';
 import '../../../core/widgets/radar_bottom_sheet.dart';
 import '../../chat/presentation/chat_overlay.dart';
+import '../../session/application/session_state.dart';
 import '../../session/presentation/privacy_sheet.dart';
 import '../application/radar_providers.dart';
 import '../domain/radar_blip.dart';
@@ -51,6 +52,8 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
         .map((id) => ref.watch(radarBlipProvider(id)))
         .whereType<RadarBlip>()
         .toList(growable: false);
+    final session = ref.watch(sessionStateProvider);
+    final sessionName = session?.sessionName ?? 'Unnamed Session';
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -68,7 +71,7 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Neon Fox Squad', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+                            Text(sessionName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
                             Text(
                               '${blips.length} active',
                               style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.green),

@@ -7,6 +7,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/app_config.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/radar_snackbar.dart';
+import '../../../main.dart';
 
 class QrScannerScreen extends ConsumerStatefulWidget {
   const QrScannerScreen({super.key});
@@ -167,7 +168,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
             top: MediaQuery.of(context).padding.top + 8,
             left: 8,
             child: CircleAvatar(
-              backgroundColor: AppColors.black.withOpacity(0.6),
+              backgroundColor: Colors.black.withOpacity(0.6),
               child: IconButton(
                 icon: const Icon(Icons.close, color: AppColors.white),
                 onPressed: () {
@@ -185,7 +186,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
               height: 280,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: AppColors.primary,
+                  color: AppColors.electricBlue,
                   width: 3,
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -199,7 +200,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                       color: AppColors.white,
                       shadows: [
                         Shadow(
-                          color: AppColors.black.withOpacity(0.7),
+                          color: Colors.black.withOpacity(0.7),
                           blurRadius: 8,
                         ),
                       ],
@@ -222,7 +223,7 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
                   color: AppColors.white,
                   shadows: [
                     Shadow(
-                      color: AppColors.black.withOpacity(0.7),
+                      color: Colors.black.withOpacity(0.7),
                       blurRadius: 8,
                     ),
                   ],

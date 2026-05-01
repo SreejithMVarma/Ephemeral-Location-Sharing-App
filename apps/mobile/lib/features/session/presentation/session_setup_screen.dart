@@ -7,6 +7,7 @@ import '../../../core/error_handling/retry.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/radar_button.dart';
 import '../../../core/widgets/radar_text_field.dart';
+import '../application/session_state.dart';
 import '../infrastructure/network_providers.dart';
 
 class SessionSetupScreen extends ConsumerStatefulWidget {
@@ -17,7 +18,7 @@ class SessionSetupScreen extends ConsumerStatefulWidget {
 }
 
 class _SessionSetupScreenState extends ConsumerState<SessionSetupScreen> {
-  final TextEditingController _displayNameController = TextEditingController(text: 'Explorer');
+  final TextEditingController _displayNameController = TextEditingController();
   final TextEditingController _sessionNameController = TextEditingController();
   bool _groupChatEnabled = true;
   bool _loading = false;
@@ -70,14 +71,22 @@ class _SessionSetupScreenState extends ConsumerState<SessionSetupScreen> {
 
       final deepLinkUrl = (response['deep_link_url'] as String?) ?? '';
       if (deepLinkUrl.isEmpty) {
-      debugPrint('[Generate QR] create-session response: $response');
+        debugPrint('[Generate QR] create-session response: $response');
         throw StateError('Backend did not return a deep link');
       }
-        debugPrint('[Generate QR] backend returned empty deep_link_url');
+      debugPrint('[Generate QR] backend returned empty deep_link_url');
+
+      // Save session state for the admin/creator
+      ref.read(sessionStateProvider.notifier).setSession(
+        sessionId: adminId,
+        sessionName: sessionName,
+        userId: adminId,
+        displayName: displayName,
+        privacyMode: 'full_map',
+      );
 
       if (!mounted) {
-
-      debugPrint('[Generate QR] deep link ready, navigating to waiting room');
+        debugPrint('[Generate QR] deep link ready, navigating to waiting room');
         return;
       }
 
