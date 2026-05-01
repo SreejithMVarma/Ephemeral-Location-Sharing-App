@@ -128,10 +128,15 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
                                         }
 
                                         final raw = capture.barcodes.first.rawValue;
-                                        debugPrint('[Scanner] raw: $raw');
-                                        if (raw == null || raw.isEmpty) return;
+                                        debugPrint('[Scanner] raw QR scanned: $raw');
+                                        if (raw == null || raw.isEmpty) {
+                                          debugPrint('[Scanner] QR value is empty');
+                                          return;
+                                        }
+
                                         final uri = Uri.tryParse(raw);
                                         if (uri == null) {
+                                          debugPrint('[Scanner] failed to parse URI: $raw');
                                           RadarSnackbar.show(
                                             context,
                                             message: 'Malformed deep link',
@@ -140,22 +145,51 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
                                           return;
                                         }
 
+                                        debugPrint('[Scanner] parsed URI: $uri');
+                                        debugPrint('[Scanner] URI scheme: ${uri.scheme}');
+                                        debugPrint('[Scanner] URI host: ${uri.host}');
+                                        debugPrint('[Scanner] URI path: ${uri.path}');
+
                                         final config = ref.read(appConfigProvider);
+                                        debugPrint('[Scanner] expected deep link scheme: ${config.deepLinkScheme}');
+
+                                        // Check if scheme is valid: custom scheme OR http/https
                                         final schemeOk = uri.scheme.isNotEmpty && (
-                                          uri.scheme == config.deepLinkScheme ||
-                                          uri.isScheme('http') || uri.isScheme('https')
+                                          (config.deepLinkScheme.isNotEmpty && uri.scheme == config.deepLinkScheme) ||
+                                          uri.isScheme('http') || 
+                                          uri.isScheme('https')
                                         );
+
                                         if (!schemeOk) {
-                                          debugPrint('[Scanner] ignored uri with scheme: ${uri.scheme}');
+                                          debugPrint('[Scanner] ❌ rejected: invalid scheme "${uri.scheme}" (expected: "${config.deepLinkScheme}")');
+                                          RadarSnackbar.show(
+                                            context,
+                                            message: 'Invalid QR code scheme',
+                                            type: RadarSnackType.warning,
+                                          );
                                           return;
                                         }
 
-                                        final sessionId = uri.queryParameters['s'];
-                                        final passkey = uri.queryParameters['p'];
+                                        debugPrint('[Scanner] ✓ scheme is valid');
+
+                                        // Check if this is a join target
                                         final isJoinTarget =
                                             uri.host == 'join' ||
                                             uri.path == '/join' ||
                                             uri.path == 'join';
+
+                                        debugPrint('[Scanner] is join target: $isJoinTarget');
+
+                                        // Extract parameters
+                                        final sessionId = uri.queryParameters['s'];
+                                        final passkey = uri.queryParameters['p'];
+                                        final region = uri.queryParameters['r'] ?? 'us-east';
+
+                                        debugPrint('[Scanner] session_id: $sessionId');
+                                        debugPrint('[Scanner] passkey: ${passkey != null ? '[REDACTED]' : 'null'}');
+                                        debugPrint('[Scanner] region: $region');
+
+                                        // Validate required parameters
                                         final hasJoinParams =
                                             sessionId != null &&
                                             sessionId.isNotEmpty &&
@@ -163,20 +197,27 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
                                             passkey.isNotEmpty;
 
                                         if (!isJoinTarget || !hasJoinParams) {
-                                          debugPrint('[Scanner] ignored non-radar QR: $uri');
+                                          debugPrint('[Scanner] ❌ rejected: invalid join target or missing params');
+                                          RadarSnackbar.show(
+                                            context,
+                                            message: 'Invalid radar code',
+                                            type: RadarSnackType.warning,
+                                          );
                                           return;
                                         }
 
+                                        debugPrint('[Scanner] ✅ valid radar code - navigating to join with s=$sessionId, p=[REDACTED], r=$region');
                                         handlingScan = true;
 
                                         // Stop the camera before navigating to avoid races
                                         await controller.stop();
                                         if (context.mounted) {
                                           context.pop();
-                                          context.push('/join?${uri.query}');
+                                          // Navigate with all parameters
+                                          context.push('/join?s=$sessionId&p=$passkey&r=$region');
                                         }
                                       } catch (e, st) {
-                                        debugPrint('[Scanner] error: $e\n$st');
+                                        debugPrint('[Scanner] ❌ error: $e\n$st');
                                       }
                                     },
                                   ),
