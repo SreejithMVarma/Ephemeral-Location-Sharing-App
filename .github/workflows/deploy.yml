@@ -18,7 +18,7 @@ jobs:
       - name: Build image
         run: docker build -t radarapp-backend:${{ github.sha }} .
       - name: Trivy scan
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@v0.35.0
         with:
           image-ref: radarapp-backend:${{ github.sha }}
           severity: CRITICAL,HIGH

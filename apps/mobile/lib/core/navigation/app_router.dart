@@ -20,7 +20,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final scanning = state.uri.path == '/scan-qr';
       final setupPath = state.uri.path == '/session-setup';
       final waitingPath = state.uri.path == '/waiting';
-      if (!isAuthed && !joining && !scanning && !setupPath && !waitingPath && state.uri.path != '/') {
+      final radarPath = state.uri.path == '/radar';
+      if (!isAuthed && !joining && !scanning && !setupPath && !waitingPath && !radarPath && state.uri.path != '/') {
         return '/';
       }
       return null;
@@ -43,7 +44,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final sessionId = state.uri.queryParameters['s'] ?? '';
           final passkey = state.uri.queryParameters['p'] ?? '';
-          return JoinScreen(sessionId: sessionId, passkey: passkey);
+          final displayName = state.uri.queryParameters['d'];
+          final privacyMode = state.uri.queryParameters['m'];
+          return JoinScreen(
+            sessionId: sessionId,
+            passkey: passkey,
+            autoJoinDisplayName: displayName,
+            autoJoinPrivacyMode: privacyMode,
+          );
         },
       ),
       GoRoute(

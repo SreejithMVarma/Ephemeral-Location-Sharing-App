@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../core/animations/app_animations.dart';
-import '../../../main.dart';
+import '../../../core/error_handling/error_messages.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/radar_button.dart';
-import '../../../core/widgets/radar_card.dart';
-import '../../../core/widgets/radar_snackbar.dart';
 import '../application/rejoin_service.dart';
 import '../domain/session_cache.dart';
+import '../infrastructure/network_providers.dart';
 
 class EntryScreen extends ConsumerStatefulWidget {
   const EntryScreen({super.key});
@@ -150,8 +151,22 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
                                   session: session,
                                   onRejoin: () {
                                     HapticFeedback.lightImpact();
-                                    context.push('/join?s=${session.sessionId}&p=${session.authToken}');
+                                    // If created by me, auto-fill form with saved config
+                                    if (session.isCreatedByMe && session.displayName.isNotEmpty) {
+                                      context.push(
+                                        '/join?s=${session.sessionId}&p=${session.authToken}&d=${Uri.encodeComponent(session.displayName)}&m=${session.privacyMode}',
+                                      );
+                                    } else {
+                                      context.push('/join?s=${session.sessionId}&p=${session.authToken}');
+                                    }
                                   },
+                                  onViewQr: session.isCreatedByMe ? () {
+                                    HapticFeedback.lightImpact();
+                                    _showQrBottomSheet(context, session);
+                                  } : null,
+                                  onDelete: session.isCreatedByMe ? () {
+                                    _showDeleteConfirmation(context, session);
+                                  } : null,
                                 )),
                             ],
                           ),
@@ -184,6 +199,65 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
         child: child,
       ),
     );
+  }
+
+  void _showQrBottomSheet(BuildContext context, SessionCache session) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => _QrShareSheet(session: session),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, SessionCache session) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('Delete Radar?'),
+        content: Text(
+          'Are you sure you want to delete "${session.sessionName}"? This will end the session for everyone.',
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteSession(session);
+            },
+            child: const Text('Delete', style: TextStyle(color: Color(0xFFe74c3c))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteSession(SessionCache session) async {
+    try {
+      final api = ref.read(apiClientProvider);
+      await api.deleteRequest(
+        '/api/v1/sessions/${session.sessionId}',
+        query: {'admin_id': session.adminId},
+      );
+
+      if (mounted) {
+        ref.invalidate(sessionHistoryProvider);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Session deleted')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete session: ${ErrorMessages.fromException(e)}')),
+        );
+      }
+    }
   }
 }
 
@@ -298,10 +372,14 @@ class _SessionHistoryItem extends StatelessWidget {
   const _SessionHistoryItem({
     required this.session,
     required this.onRejoin,
+    this.onViewQr,
+    this.onDelete,
   });
 
   final SessionCache session;
   final VoidCallback onRejoin;
+  final VoidCallback? onViewQr;
+  final VoidCallback? onDelete;
 
   String _formatTimeAgo(String joinedAtStr) {
     try {
@@ -338,13 +416,9 @@ class _SessionHistoryItem extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.white.withValues(alpha: 0.04),
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          border: Border.all(
-            color: AppColors.blue.withValues(alpha: 0.3),
-            width: 0.8,
-          ),
+          border: Border.all(color: AppColors.white.withValues(alpha: 0.08), width: 0.5),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Expanded(
               child: Column(
@@ -352,44 +426,198 @@ class _SessionHistoryItem extends StatelessWidget {
                 children: [
                   Text(
                     session.sessionName,
-                    style: textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Joined $timeAgo',
-                    style: textTheme.bodySmall?.copyWith(
-                      color: AppColors.textDim,
-                    ),
+                    timeAgo,
+                    style: textTheme.labelSmall?.copyWith(color: AppColors.textDim),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.blue.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(AppRadius.button),
-                border: Border.all(
-                  color: AppColors.blue.withValues(alpha: 0.5),
-                  width: 0.8,
+            if (onViewQr != null)
+              Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.sm),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: onViewQr,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.blue.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.blue.withValues(alpha: 0.3), width: 0.6),
+                        ),
+                        child: const Icon(Icons.qr_code, color: AppColors.blue, size: 18),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    if (onDelete != null)
+                      GestureDetector(
+                        onTap: onDelete,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.danger.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.danger.withValues(alpha: 0.3), width: 0.6),
+                          ),
+                          child: const Icon(Icons.delete_outline, color: AppColors.danger, size: 18),
+                        ),
+                      ),
+                  ],
                 ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(left: AppSpacing.sm),
+                child: Icon(Icons.arrow_forward, color: AppColors.textDim, size: 18),
               ),
-              child: Text(
-                'Rejoin',
-                style: textTheme.labelSmall?.copyWith(
-                  color: AppColors.blue,
-                  fontWeight: FontWeight.w600,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QrShareSheet extends StatelessWidget {
+  const _QrShareSheet({required this.session});
+
+  final SessionCache session;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg,
+          AppSpacing.lg + MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Share Radar',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                  ),
                 ),
-              ),
+                IconButton(
+                  icon: const Icon(Icons.close, color: AppColors.textDim),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
+            const SizedBox(height: AppSpacing.lg),
+            if (session.deepLinkUrl.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: AppColors.green.withValues(alpha: 0.5), width: 1.2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.green.withValues(alpha: 0.3),
+                      blurRadius: 20,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    QrImageView(
+                      data: session.deepLinkUrl,
+                      size: 240,
+                      eyeStyle: const QrEyeStyle(
+                        eyeShape: QrEyeShape.square,
+                        color: AppColors.bg,
+                      ),
+                      dataModuleStyle: const QrDataModuleStyle(
+                        dataModuleShape: QrDataModuleShape.square,
+                        color: AppColors.bg,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      session.deepLinkUrl,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textDim),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Clipboard.setData(ClipboardData(text: session.deepLinkUrl)).then((_) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Link copied to clipboard')),
+                        );
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.blue.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(color: AppColors.blue.withValues(alpha: 0.3), width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.link, color: AppColors.blue, size: 16),
+                          const SizedBox(width: 6),
+                          Text('Copy Link', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.blue)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      HapticFeedback.lightImpact();
+                      Share.share(session.deepLinkUrl);
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      decoration: BoxDecoration(
+                        color: AppColors.green.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                        border: Border.all(color: AppColors.green.withValues(alpha: 0.3), width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.share, color: AppColors.green, size: 16),
+                          const SizedBox(width: 6),
+                          Text('Share', style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.green)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
           ],
         ),
       ),

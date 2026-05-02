@@ -34,36 +34,40 @@ class _ChatOverlayState extends ConsumerState<ChatOverlay> {
     return RepaintBoundary(
       child: Align(
         alignment: Alignment.centerRight,
-        child: AnimatedContainer(
+        child: AnimatedSlide(
           duration: const Duration(milliseconds: 250),
           curve: Curves.easeOutCubic,
-          width: _open ? maxWidth : 46,
-          decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.96),
-            borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
-            border: Border.all(color: AppColors.white.withValues(alpha: 0.08), width: 0.6),
-          ),
-          child: GestureDetector(
-            onHorizontalDragUpdate: (details) {
-              if (details.delta.dx < -6) {
-                setState(() => _open = true);
-              }
-              if (details.delta.dx > 6) {
-                setState(() => _open = false);
-              }
-            },
-            onHorizontalDragEnd: (details) {
-              if (details.primaryVelocity == null) {
-                return;
-              }
-              if (details.primaryVelocity! < -400) {
-                setState(() => _open = true);
-              } else if (details.primaryVelocity! > 400) {
-                setState(() => _open = false);
-              }
-            },
-            child: _open
-                ? Column(
+          offset: _open ? const Offset(0, 0) : const Offset(1, 0),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            width: maxWidth,
+            decoration: BoxDecoration(
+              color: AppColors.surface.withValues(alpha: 0.96),
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), bottomLeft: Radius.circular(20)),
+              border: Border.all(color: AppColors.white.withValues(alpha: 0.08), width: 0.6),
+            ),
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) {
+                if (details.delta.dx < -6) {
+                  setState(() => _open = true);
+                }
+                if (details.delta.dx > 6) {
+                  setState(() => _open = false);
+                }
+              },
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity == null) {
+                  return;
+                }
+                if (details.primaryVelocity! < -400) {
+                  setState(() => _open = true);
+                } else if (details.primaryVelocity! > 400) {
+                  setState(() => _open = false);
+                }
+              },
+              child: _open
+                  ? Column(
                     children: [
                       const SizedBox(height: 12),
                       Padding(
@@ -130,7 +134,8 @@ class _ChatOverlayState extends ConsumerState<ChatOverlay> {
                       ),
                     ],
                   )
-                : const Center(child: Icon(Icons.chat_bubble_outline, color: AppColors.textDim)),
+                  : const SizedBox.shrink(),
+            ),
           ),
         ),
       ),

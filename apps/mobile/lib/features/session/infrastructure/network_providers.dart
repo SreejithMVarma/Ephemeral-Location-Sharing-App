@@ -77,19 +77,27 @@ class RadarWebSocketService {
     while (attempt < retries) {
       try {
         _channel = WebSocketChannel.connect(Uri.parse(_url));
-        _channel!.stream.listen((event) {
-          try {
-            if (event is String) {
-              // Decode JSON from WebSocket message
-              final parsed = jsonDecode(event) as Map<String, dynamic>;
-              _controller.add(RadarMessage.fromJson(parsed));
-            } else if (event is Map<String, dynamic>) {
-              _controller.add(RadarMessage.fromJson(event));
+        _channel!.stream.listen(
+          (event) {
+            try {
+              if (event is String) {
+                final parsed = jsonDecode(event) as Map<String, dynamic>;
+                _controller.add(RadarMessage.fromJson(parsed));
+              } else if (event is Map<String, dynamic>) {
+                _controller.add(RadarMessage.fromJson(event));
+              }
+            } catch (e) {
+              debugPrint('Error parsing WS message: $e');
             }
-          } catch (e) {
-            debugPrint('Error parsing WS message: $e');
-          }
-        });
+          },
+          onError: (Object e) {
+            debugPrint('WS stream error: $e');
+          },
+          onDone: () {
+            debugPrint('WS stream closed');
+          },
+          cancelOnError: false,
+        );
         return;
       } catch (e) {
         attempt += 1;
@@ -100,8 +108,10 @@ class RadarWebSocketService {
     throw NetworkException('WebSocket reconnect limit reached');
   }
 
+  /// Send a message to the server. The [json] map is encoded to a JSON string
+  /// because the backend expects `receive_text()` / `json.loads()`.
   void send(Map<String, dynamic> json) {
-    _channel?.sink.add(json);
+    _channel?.sink.add(jsonEncode(json));
   }
 
   Future<void> disconnect() async {
@@ -110,9 +120,10 @@ class RadarWebSocketService {
   }
 }
 
-final radarWebSocketServiceProvider = Provider<RadarWebSocketService>((ref) {
-  // Use WebSocket URL from config - will be set dynamically per session
-  final wsUrl = 'ws://localhost:8000/ws/test-session'; // TODO: Set dynamically from session
+/// Per-session WebSocket service. Key is the full WS URL including path and
+/// query string, e.g. `ws://10.0.2.2:8000/ws/<sessionId>?token=<userId>`.
+final radarWebSocketServiceProvider =
+    Provider.family<RadarWebSocketService, String>((ref, wsUrl) {
   return RadarWebSocketService(wsUrl);
 });
 

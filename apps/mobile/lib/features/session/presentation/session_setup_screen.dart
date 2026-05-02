@@ -7,6 +7,7 @@ import '../../../core/error_handling/retry.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/radar_button.dart';
 import '../../../core/widgets/radar_text_field.dart';
+import '../../../main.dart';
 import '../application/rejoin_service.dart';
 import '../application/session_state.dart';
 import '../domain/session_cache.dart';
@@ -71,20 +72,30 @@ class _SessionSetupScreenState extends ConsumerState<SessionSetupScreen> {
         ),
       );
 
+      final sessionId = (response['session_id'] as String?) ?? '';
+      final passkey = (response['passkey'] as String?) ?? '';
       final deepLinkUrl = (response['deep_link_url'] as String?) ?? '';
-      if (deepLinkUrl.isEmpty) {
+      
+      if (sessionId.isEmpty || passkey.isEmpty || deepLinkUrl.isEmpty) {
         debugPrint('[Generate QR] create-session response: $response');
-        throw StateError('Backend did not return a deep link');
+        throw StateError('Backend did not return required fields');
       }
-      debugPrint('[Generate QR] backend returned empty deep_link_url');
+      debugPrint('[Generate QR] created session=$sessionId passkey=$passkey');
+
+      // Derive the WebSocket base URL from the region used for this session.
+      final config = ref.read(appConfigProvider);
+      final wsUrl = config.regionWsUrls['us-east'] ??
+          config.regionWsUrls.values.firstOrNull ??
+          '';
 
       // Save session state for the admin/creator
       ref.read(sessionStateProvider.notifier).setSession(
-        sessionId: adminId,
+        sessionId: sessionId,
         sessionName: sessionName,
         userId: adminId,
         displayName: displayName,
         privacyMode: 'full_map',
+        wsUrl: wsUrl,
       );
 
       // Save to local storage history with timestamp
@@ -92,12 +103,20 @@ class _SessionSetupScreenState extends ConsumerState<SessionSetupScreen> {
       final now = DateTime.now().toIso8601String();
       await storage.saveSession(
         SessionCache(
-          sessionId: adminId,
-          authToken: adminId, // Use admin ID as token for creator
+          sessionId: sessionId,
+          authToken: passkey,
           sessionName: sessionName,
           joinedAt: now,
+          isCreatedByMe: true,
+          adminId: adminId,
+          displayName: displayName,
+          privacyMode: 'full_map',
+          deepLinkUrl: deepLinkUrl,
         ),
       );
+
+      // Invalidate the session history provider to refresh the UI
+      ref.invalidate(sessionHistoryProvider);
 
       if (!mounted) {
         debugPrint('[Generate QR] deep link ready, navigating to waiting room');

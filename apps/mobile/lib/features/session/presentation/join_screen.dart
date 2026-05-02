@@ -21,10 +21,14 @@ class JoinScreen extends ConsumerStatefulWidget {
     super.key,
     required this.sessionId,
     required this.passkey,
+    this.autoJoinDisplayName,
+    this.autoJoinPrivacyMode,
   });
 
   final String sessionId;
   final String passkey;
+  final String? autoJoinDisplayName;
+  final String? autoJoinPrivacyMode;
 
   @override
   ConsumerState<JoinScreen> createState() => _JoinScreenState();
@@ -32,13 +36,40 @@ class JoinScreen extends ConsumerStatefulWidget {
 
 class _JoinScreenState extends ConsumerState<JoinScreen> {
   final TextEditingController _nameController = TextEditingController();
-  PrivacyMode _preJoinMode = PrivacyMode.directionDistance;
+  late PrivacyMode _preJoinMode;
   bool _loading = false;
+  bool _autoJoinAttempted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Set initial privacy mode
+    _preJoinMode = _parsePrivacyMode(widget.autoJoinPrivacyMode);
+    
+    // If auto-join data provided (rejoining created session), join immediately
+    if (widget.autoJoinDisplayName != null && widget.autoJoinDisplayName!.isNotEmpty) {
+      _nameController.text = widget.autoJoinDisplayName!;
+      _autoJoinAttempted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _joinSession();
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     super.dispose();
+  }
+
+  PrivacyMode _parsePrivacyMode(String? mode) {
+    return switch (mode) {
+      'direction_only' => PrivacyMode.directionOnly,
+      'full_map' => PrivacyMode.fullMap,
+      _ => PrivacyMode.directionDistance,
+    };
   }
 
   Future<void> _joinSession() async {
@@ -64,7 +95,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
       final token = await notifications.currentToken();
 
       // Join the session
-      final joinResponse = await retryWithBackoff(
+      await retryWithBackoff(
         task: () => api.postJson(
           '/api/v1/sessions/${widget.sessionId}/join',
           body: {
@@ -88,6 +119,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
       );
 
       final sessionName = (verifyResponse['session_name'] as String?) ?? 'Unnamed session';
+      final wsUrl = (verifyResponse['websocket_url'] as String?) ?? '';
 
       // Save session state
       ref.read(sessionStateProvider.notifier).setSession(
@@ -96,6 +128,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
         userId: userId,
         displayName: displayName,
         privacyMode: _preJoinMode.name,
+        wsUrl: wsUrl,
       );
 
       notifications.bindTokenRefresh(sessionId: widget.sessionId, userId: userId);
@@ -109,6 +142,11 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
           authToken: widget.passkey,
           sessionName: sessionName,
           joinedAt: joinedAtNow,
+          isCreatedByMe: false,
+          adminId: '',
+          displayName: displayName,
+          privacyMode: _preJoinMode.name,
+          deepLinkUrl: '',
         ),
       );
       
@@ -140,6 +178,16 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // If auto-join is in progress, show a loading indicator
+    if (_autoJoinAttempted && _loading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Rejoining session')),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Join as yourself')),
       body: Padding(

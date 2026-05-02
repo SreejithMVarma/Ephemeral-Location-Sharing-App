@@ -9,6 +9,7 @@ import '../../../core/widgets/radar_card.dart';
 import '../../../core/widgets/radar_bottom_sheet.dart';
 import '../../chat/presentation/chat_overlay.dart';
 import '../../session/application/session_state.dart';
+import '../../session/infrastructure/location_broadcaster.dart';
 import '../../session/presentation/privacy_sheet.dart';
 import '../application/radar_providers.dart';
 import '../domain/radar_blip.dart';
@@ -33,15 +34,26 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
       duration: AppAnimations.radarSweep,
     )..repeat();
     _entryController = AnimationController(
-      vsync: this,
       duration: const Duration(milliseconds: 650),
+      vsync: this,
     )..forward();
+
+    // Connect to WebSocket and start broadcasting own location once the
+    // widget tree is ready (providers are available via ref).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(radarWsLifecycleProvider.notifier).connect();
+      ref.read(locationBroadcasterProvider)?.start();
+    });
   }
 
   @override
   void dispose() {
     _sweepController.dispose();
     _entryController.dispose();
+    // Disconnect WS and stop GPS broadcasting when leaving radar.
+    ref.read(radarWsLifecycleProvider.notifier).disconnect();
+    ref.read(locationBroadcasterProvider)?.stop();
     super.dispose();
   }
 

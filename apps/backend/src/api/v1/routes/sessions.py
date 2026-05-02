@@ -114,3 +114,67 @@ async def join_session(session_id: str, payload: JoinSessionRequest) -> dict[str
     )
     
     return {"status": "joined"}
+
+
+@router.get("/{session_id}/members")
+async def get_session_members(
+    session_id: str,
+    p: str = Query(alias="p"),
+) -> list[dict]:
+    """Get members in a session."""
+    session = await repository.get_hash(repository.session_key(session_id))
+    if not session:
+        raise NotFoundError("Radar not found")
+
+    stored_passkey = session.get("passkey", "")
+    if not hmac.compare_digest(stored_passkey, p):
+        raise NotFoundError("Radar not found")
+
+    profiles = await repository.get_member_profiles(session_id)
+    return profiles
+
+
+@router.delete("/{session_id}/members/{user_id}")
+async def kick_member(
+    session_id: str,
+    user_id: str,
+    admin_token: str = Query(alias="admin_id"),
+) -> dict[str, str]:
+    """Remove a member from session (admin only)."""
+    session = await repository.get_hash(repository.session_key(session_id))
+    if not session:
+        raise NotFoundError("Radar not found")
+
+    # Verify admin token
+    if session.get("admin_id") != admin_token:
+        raise HTTPException(status_code=403, detail="Only admin can remove members")
+
+    logger.info(f"Admin {admin_token} removing user {user_id} from session {session_id}")
+
+    # Remove member from session
+    await repository.remove_member(session_id, user_id)
+    await repository.remove_location_member(session_id, user_id)
+    
+    return {"status": "removed"}
+
+
+@router.delete("/{session_id}")
+async def delete_session(
+    session_id: str,
+    admin_id: str = Query(alias="admin_id"),
+) -> dict[str, str]:
+    """Delete/destroy a session (admin only)."""
+    session = await repository.get_hash(repository.session_key(session_id))
+    if not session:
+        raise NotFoundError("Radar not found")
+
+    # Verify admin token
+    if session.get("admin_id") != admin_id:
+        raise HTTPException(status_code=403, detail="Only admin can delete session")
+
+    logger.info(f"Admin {admin_id} deleting session {session_id}")
+
+    # Delete entire session cascade
+    await repository.delete_session_cascade(session_id)
+    
+    return {"status": "deleted"}
