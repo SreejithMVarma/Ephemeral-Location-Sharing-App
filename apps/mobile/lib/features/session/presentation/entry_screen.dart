@@ -164,6 +164,10 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
                                     HapticFeedback.lightImpact();
                                     _showQrBottomSheet(context, session);
                                   } : null,
+                                  onViewParticipants: session.isCreatedByMe && session.deepLinkUrl != null ? () {
+                                    HapticFeedback.lightImpact();
+                                    context.push('/waiting?link=${Uri.encodeComponent(session.deepLinkUrl!)}');
+                                  } : null,
                                   onDelete: session.isCreatedByMe ? () {
                                     _showDeleteConfirmation(context, session);
                                   } : null,
@@ -245,10 +249,14 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
         query: {'admin_id': session.adminId},
       );
 
+      // Remove from local history immediately
+      final storage = await ref.read(localStorageServiceProvider.future);
+      await storage.removeFromHistory(session.sessionId);
+
       if (mounted) {
         ref.invalidate(sessionHistoryProvider);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Session deleted')),
+          const SnackBar(content: Text('Session ended for everyone')),
         );
       }
     } catch (e) {
@@ -259,6 +267,7 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
       }
     }
   }
+
 }
 
 class _EntryBackdrop extends StatelessWidget {
@@ -373,12 +382,14 @@ class _SessionHistoryItem extends StatelessWidget {
     required this.session,
     required this.onRejoin,
     this.onViewQr,
+    this.onViewParticipants,
     this.onDelete,
   });
 
   final SessionCache session;
   final VoidCallback onRejoin;
   final VoidCallback? onViewQr;
+  final VoidCallback? onViewParticipants;
   final VoidCallback? onDelete;
 
   String _formatTimeAgo(String joinedAtStr) {
@@ -436,24 +447,41 @@ class _SessionHistoryItem extends StatelessWidget {
                 ],
               ),
             ),
-            if (onViewQr != null)
+            if (onViewParticipants != null || onViewQr != null || onDelete != null)
               Padding(
                 padding: const EdgeInsets.only(left: AppSpacing.sm),
                 child: Row(
                   children: [
-                    GestureDetector(
-                      onTap: onViewQr,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.blue.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.blue.withValues(alpha: 0.3), width: 0.6),
+                    if (onViewParticipants != null) ...[
+                      GestureDetector(
+                        onTap: onViewParticipants,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.purple.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.purple.withValues(alpha: 0.3), width: 0.6),
+                          ),
+                          child: const Icon(Icons.people_outline, color: AppColors.purple, size: 18),
                         ),
-                        child: const Icon(Icons.qr_code, color: AppColors.blue, size: 18),
                       ),
-                    ),
-                    const SizedBox(width: 6),
+                      const SizedBox(width: 6),
+                    ],
+                    if (onViewQr != null) ...[
+                      GestureDetector(
+                        onTap: onViewQr,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.blue.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.blue.withValues(alpha: 0.3), width: 0.6),
+                          ),
+                          child: const Icon(Icons.qr_code, color: AppColors.blue, size: 18),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
                     if (onDelete != null)
                       GestureDetector(
                         onTap: onDelete,

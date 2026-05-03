@@ -10,11 +10,39 @@ import '../../features/session/presentation/join_screen.dart';
 import '../../features/session/presentation/qr_scanner_screen.dart';
 import '../../features/session/presentation/session_setup_screen.dart';
 import '../../features/session/presentation/waiting_room_screen.dart';
+import 'deep_link_service.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/',
     redirect: (context, state) {
+      // 1. Check for pending deep links first
+      final pendingLink = ref.read(pendingDeepLinkProvider);
+      if (pendingLink != null) {
+        // Clear it so we don't process it again
+        // We use Future.microtask to avoid modifying providers during build
+        Future.microtask(() {
+          ref.read(pendingDeepLinkProvider.notifier).state = null;
+        });
+
+        // Parse query params and navigate to /join
+        final sessionId = pendingLink.queryParameters['s'] ?? '';
+        final passkey = pendingLink.queryParameters['p'] ?? '';
+        final region = pendingLink.queryParameters['r'] ?? '';
+        
+        // Prevent duplicate navigation if we are already on /join with same params
+        final isAlreadyJoining = state.uri.path == '/join' &&
+            state.uri.queryParameters['s'] == sessionId &&
+            state.uri.queryParameters['p'] == passkey;
+            
+        if (!isAlreadyJoining && sessionId.isNotEmpty && passkey.isNotEmpty) {
+          // Keep existing authentication state!
+          // We just redirect to JoinScreen and it handles joining
+          return '/join?s=$sessionId&p=$passkey&r=$region';
+        }
+      }
+
+      // 2. Normal auth-based redirect
       final isAuthed = ref.read(isAuthenticatedProvider);
       final joining = state.uri.path == '/join';
       final scanning = state.uri.path == '/scan-qr';

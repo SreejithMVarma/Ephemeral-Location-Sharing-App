@@ -10,6 +10,7 @@ import '../../session/application/session_state.dart';
 import '../../session/domain/location_mode.dart';
 import '../infrastructure/location_service.dart';
 import '../infrastructure/network_providers.dart';
+import '../infrastructure/session_location_logger.dart';
 
 /// Bridges GPS position fixes to the WebSocket as `LOCATION_UPDATE` envelopes.
 ///
@@ -31,12 +32,20 @@ class LocationBroadcaster {
   StreamSubscription<Position>? _sub;
 
   /// Starts listening to [LocationMode.radar] GPS fixes and broadcasting them.
-  Future<void> start() async {
+  Future<void> start(String sessionId) async {
     await stop(); // cancel any previous subscription first
+    await SessionLocationLogger.openSession(sessionId);
+    // Ensure the WS channel is open before sending any location fixes.
+    try {
+      await _wsService.connect();
+      debugPrint('[ME] WS connected, starting GPS broadcast');
+    } catch (e) {
+      debugPrint('[ME] WS connect failed: $e — location updates will not be sent');
+    }
     await _locationService.start(LocationMode.radar);
     _sub = _locationService.stream.listen(
       _onPosition,
-      onError: (Object e) => debugPrint('[LocationBroadcaster] GPS error: $e'),
+      onError: (Object e) => debugPrint('[ME] GPS error: $e'),
     );
   }
 
@@ -54,7 +63,16 @@ class LocationBroadcaster {
         'heading': position.heading,
       },
     };
-    debugPrint('[LocationBroadcaster] sending location lat=${position.latitude} lng=${position.longitude}');
+    debugPrint('[ME] lat=${position.latitude.toStringAsFixed(6)} lng=${position.longitude.toStringAsFixed(6)} acc=${position.accuracy.toStringAsFixed(1)}m');
+    // Log to per-session file with real userId
+    SessionLocationLogger.logOwnLocation(
+      userId: _userId,
+      lat: position.latitude,
+      lng: position.longitude,
+      accuracy: position.accuracy,
+      speed: position.speed,
+      heading: position.heading,
+    );
     _wsService.send(envelope);
   }
 
@@ -63,6 +81,7 @@ class LocationBroadcaster {
     await _sub?.cancel();
     _sub = null;
     await _locationService.stop();
+    await SessionLocationLogger.closeSession();
   }
 }
 

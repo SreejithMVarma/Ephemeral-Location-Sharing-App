@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/error_handling/error_messages.dart';
 import '../../../core/error_handling/retry.dart';
@@ -85,8 +86,30 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
       _loading = true;
     });
 
+    final locStatus = await Permission.locationWhenInUse.request();
+    if (locStatus != PermissionStatus.granted) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission is required to join a session')),
+        );
+      }
+      return;
+    }
+    await Permission.notification.request();
+
+    // Reuse stored userId if we've been in this session before (prevents duplicates)
+    final storage = await ref.read(localStorageServiceProvider.future);
+    final existingSessions = await storage.readSessionHistory();
+    final existingSession = existingSessions.where((s) => s.sessionId == widget.sessionId).firstOrNull;
+
     final now = DateTime.now().millisecondsSinceEpoch;
-    final userId = 'user_$now';
+    final userId = (existingSession?.userId.isNotEmpty == true)
+        ? existingSession!.userId
+        : 'user_$now';
+
+    debugPrint('[JoinScreen] Using userId=$userId (reused=${existingSession?.userId.isNotEmpty == true})');
+
     final api = ref.read(apiClientProvider);
     final notifications = ref.read(notificationServiceProvider);
 
@@ -128,13 +151,13 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
         userId: userId,
         displayName: displayName,
         privacyMode: _preJoinMode.name,
+        passkey: widget.passkey,
         wsUrl: wsUrl,
       );
 
       notifications.bindTokenRefresh(sessionId: widget.sessionId, userId: userId);
       
       // Save to local storage history with timestamp
-      final storage = await ref.read(localStorageServiceProvider.future);
       final joinedAtNow = DateTime.now().toIso8601String();
       await storage.saveSession(
         SessionCache(
@@ -142,11 +165,12 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
           authToken: widget.passkey,
           sessionName: sessionName,
           joinedAt: joinedAtNow,
-          isCreatedByMe: false,
-          adminId: '',
+          isCreatedByMe: existingSession?.isCreatedByMe ?? false,
+          adminId: existingSession?.adminId ?? '',
+          userId: userId,
           displayName: displayName,
           privacyMode: _preJoinMode.name,
-          deepLinkUrl: '',
+          deepLinkUrl: existingSession?.deepLinkUrl ?? '',
         ),
       );
       
@@ -157,6 +181,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
         },
       );
       ref.read(isAuthenticatedProvider.notifier).state = true;
+      ref.invalidate(sessionHistoryProvider);
 
       if (mounted) {
         context.push('/radar');

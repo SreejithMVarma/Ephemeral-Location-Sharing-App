@@ -68,15 +68,24 @@ class RadarWebSocketService {
 
   final String _url;
   WebSocketChannel? _channel;
+  bool _isConnected = false;
   final _controller = StreamController<RadarMessage>.broadcast();
 
   Stream<RadarMessage> get messages => _controller.stream;
 
   Future<void> connect({int retries = 5}) async {
+    // Guard: only one active connection per instance.
+    if (_isConnected && _channel != null) return;
+
     var attempt = 0;
     while (attempt < retries) {
       try {
-        _channel = WebSocketChannel.connect(Uri.parse(_url));
+        final channel = WebSocketChannel.connect(Uri.parse(_url));
+        // web_socket_channel 3.x requires awaiting ready before the stream
+        // delivers any messages. Without this the channel is silent.
+        await channel.ready;
+        _channel = channel;
+        _isConnected = true;
         _channel!.stream.listen(
           (event) {
             try {
@@ -87,20 +96,27 @@ class RadarWebSocketService {
                 _controller.add(RadarMessage.fromJson(event));
               }
             } catch (e) {
-              debugPrint('Error parsing WS message: $e');
+              debugPrint('[WS] parse error: $e');
             }
           },
           onError: (Object e) {
-            debugPrint('WS stream error: $e');
+            debugPrint('[WS] stream error: $e');
+            _isConnected = false;
+            _channel = null;
           },
           onDone: () {
-            debugPrint('WS stream closed');
+            debugPrint('[WS] stream closed');
+            _isConnected = false;
+            _channel = null;
           },
           cancelOnError: false,
         );
         return;
       } catch (e) {
         attempt += 1;
+        _isConnected = false;
+        _channel = null;
+        debugPrint('[WS] connect attempt $attempt failed: $e');
         final backoff = Duration(seconds: attempt > 5 ? 30 : attempt);
         await Future<void>.delayed(backoff);
       }
@@ -108,13 +124,13 @@ class RadarWebSocketService {
     throw NetworkException('WebSocket reconnect limit reached');
   }
 
-  /// Send a message to the server. The [json] map is encoded to a JSON string
-  /// because the backend expects `receive_text()` / `json.loads()`.
+  /// Send a message to the server.
   void send(Map<String, dynamic> json) {
     _channel?.sink.add(jsonEncode(json));
   }
 
   Future<void> disconnect() async {
+    _isConnected = false;
     await _channel?.sink.close();
     _channel = null;
   }

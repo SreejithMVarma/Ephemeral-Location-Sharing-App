@@ -10,7 +10,14 @@ import '../../session/application/session_state.dart';
 import '../../session/domain/radar_message.dart';
 import '../../session/infrastructure/location_broadcaster.dart';
 import '../../session/infrastructure/network_providers.dart';
+import '../../session/infrastructure/session_location_logger.dart';
 import '../domain/radar_blip.dart';
+
+// ---------------------------------------------------------------------------
+// Session-ended flag — set true when backend sends SESSION_ENDED
+// ---------------------------------------------------------------------------
+
+final sessionEndedProvider = StateProvider<bool>((ref) => false);
 
 // ---------------------------------------------------------------------------
 // Own position stream
@@ -34,6 +41,11 @@ class RadarBlipsNotifier extends StateNotifier<Map<String, RadarBlip>> {
   final Ref _ref;
   StreamSubscription<RadarMessage>? _wsSub;
   StreamSubscription<Position>? _gpsSub;
+  bool _isPaused = true;
+
+  void setPaused(bool paused) {
+    _isPaused = paused;
+  }
 
   void _init() {
     // Seed from HTTP snapshot
@@ -41,8 +53,15 @@ class RadarBlipsNotifier extends StateNotifier<Map<String, RadarBlip>> {
       liveRadarBlipsProvider,
       (_, next) {
         next.whenData((snapshot) {
-          // Merge snapshot into existing map (don't wipe WS updates)
-          state = {...state, ...snapshot};
+          // Merge: WS live data wins over HTTP snapshot.
+          // Build a map starting with snapshot entries, then for any key already
+          // in state (from WS), keep the WS blip — preserving computed distance,
+          // bearing, and remoteLat/Lng that the snapshot never includes.
+          final merged = <String, RadarBlip>{...snapshot};
+          for (final entry in state.entries) {
+            merged[entry.key] = entry.value; // WS data overwrites snapshot
+          }
+          state = merged;
         });
       },
       fireImmediately: true,
@@ -63,19 +82,38 @@ class RadarBlipsNotifier extends StateNotifier<Map<String, RadarBlip>> {
     final session = _ref.read(sessionStateProvider);
     if (session == null || session.wsUrl.isEmpty) return;
 
-    final wsUrl = '${session.wsUrl}/ws/${session.sessionId}?token=${session.userId}';
+    final baseUrl = session.wsUrl.endsWith('/')
+        ? session.wsUrl.substring(0, session.wsUrl.length - 1)
+        : session.wsUrl;
+    final path = baseUrl.endsWith('/ws') ? '/${session.sessionId}' : '/ws/${session.sessionId}';
+    final wsUrl = '$baseUrl$path?token=${session.userId}';
+
     final wsService = _ref.read(radarWebSocketServiceProvider(wsUrl));
 
     _wsSub?.cancel();
     _wsSub = wsService.messages.listen(
       _handleMessage,
-      onError: (Object e) => debugPrint('[RadarBlipsNotifier] WS error: $e'),
+      onError: (Object e) => debugPrint('[WS] error: $e'),
     );
+
+    // Actually open the WebSocket connection (was missing — caused no peer data)
+    wsService.connect().then((_) {
+      debugPrint('[WS] connected: $wsUrl');
+    }).catchError((Object e) {
+      debugPrint('[WS] connect failed: $e');
+    });
   }
 
   void _handleMessage(RadarMessage msg) {
+    // Log every incoming WS message so we can confirm the receive path is alive.
+    debugPrint('[WS-RX] type=${msg.type.name} sender=${msg.senderId}');
+
     switch (msg.type) {
       case RadarMessageType.locationUpdate:
+        if (_isPaused) {
+          debugPrint('[WS-RX] LOCATION_UPDATE dropped — radar is paused');
+          return;
+        }
         _applyLocationUpdate(msg);
       case RadarMessageType.userDisconnected:
         final userId = msg.payload['user_id'] as String?;
@@ -83,9 +121,15 @@ class RadarBlipsNotifier extends StateNotifier<Map<String, RadarBlip>> {
           final updated = Map<String, RadarBlip>.from(state);
           updated.remove(userId);
           state = updated;
+          debugPrint('[WS-RX] user disconnected: $userId');
         }
       case RadarMessageType.privacyUpdate:
         _applyPrivacyUpdate(msg);
+      case RadarMessageType.sessionEnded:
+        debugPrint('[WS-RX] SESSION_ENDED from server');
+        _ref.read(sessionEndedProvider.notifier).state = true;
+      case RadarMessageType.chatMessage:
+        _ref.read(incomingChatMessageProvider.notifier).state = msg;
       default:
         break;
     }
@@ -103,6 +147,16 @@ class RadarBlipsNotifier extends StateNotifier<Map<String, RadarBlip>> {
     final remoteLat = (payload['lat'] as num?)?.toDouble();
     final remoteLng = (payload['lng'] as num?)?.toDouble();
     if (remoteLat == null || remoteLng == null) return;
+
+    // Log peer location to per-session file
+    SessionLocationLogger.logPeerLocation(
+      userId: senderId,
+      lat: remoteLat,
+      lng: remoteLng,
+      accuracy: (payload['accuracy'] as num?)?.toDouble() ?? 0,
+      speed: (payload['speed'] as num?)?.toDouble() ?? 0,
+      heading: (payload['heading'] as num?)?.toDouble() ?? 0,
+    );
 
     final ownPos = _ref.read(ownPositionProvider);
 
@@ -131,6 +185,13 @@ class RadarBlipsNotifier extends StateNotifier<Map<String, RadarBlip>> {
     final directionOnly =
         existing?.directionOnly ?? (payload['privacy_mode'] == 'direction_only');
 
+    debugPrint(
+      '[PEER] $displayName  lat=${remoteLat.toStringAsFixed(6)}'
+      ' lng=${remoteLng.toStringAsFixed(6)}'
+      ' dist=${distance.toStringAsFixed(0)}m'
+      ' bearing=${bearing.toStringAsFixed(1)}deg',
+    );
+
     final updated = Map<String, RadarBlip>.from(state);
     updated[senderId] = RadarBlip(
       userId: senderId,
@@ -138,6 +199,8 @@ class RadarBlipsNotifier extends StateNotifier<Map<String, RadarBlip>> {
       bearing: bearing,
       distanceMeters: distance,
       directionOnly: directionOnly,
+      remoteLat: remoteLat,
+      remoteLng: remoteLng,
     );
     state = updated;
   }
@@ -151,22 +214,46 @@ class RadarBlipsNotifier extends StateNotifier<Map<String, RadarBlip>> {
     if (existing == null) return;
 
     final updated = Map<String, RadarBlip>.from(state);
-    updated[userId] = RadarBlip(
-      userId: existing.userId,
-      displayName: existing.displayName,
-      bearing: existing.bearing,
-      distanceMeters: existing.distanceMeters,
-      directionOnly: mode == 'direction_only',
-    );
+    updated[userId] = existing.copyWith(directionOnly: mode == 'direction_only');
     state = updated;
   }
 
   /// Recompute bearing + distance for every existing blip when own position changes.
   void _recomputeAllDistances(Position ownPos) {
-    // Only recompute if we actually have blips
     if (state.isEmpty) return;
-    // We don't have the remote lat/lng stored, so we skip recompute here;
-    // the next LOCATION_UPDATE from each peer will carry fresh coordinates.
+
+    bool changed = false;
+    final updated = Map<String, RadarBlip>.from(state);
+    final recomputed = <String>[];
+
+    for (final entry in state.entries) {
+      final blip = entry.value;
+      if (blip.remoteLat == null || blip.remoteLng == null) continue;
+
+      final newBearing = haversineBearing(
+        ownPos.latitude,
+        ownPos.longitude,
+        blip.remoteLat!,
+        blip.remoteLng!,
+      );
+      final newDistance = haversineDistance(
+        ownPos.latitude,
+        ownPos.longitude,
+        blip.remoteLat!,
+        blip.remoteLng!,
+      );
+
+      updated[entry.key] = blip.copyWith(
+        bearing: newBearing,
+        distanceMeters: newDistance,
+      );
+      recomputed.add('${blip.displayName.isNotEmpty ? blip.displayName : blip.userId}: ${newDistance.toStringAsFixed(1)}m @ ${newBearing.toStringAsFixed(1)}°');
+      changed = true;
+    }
+
+    if (changed) {
+      state = updated;
+    }
   }
 
   @override
@@ -182,7 +269,6 @@ class RadarBlipsNotifier extends StateNotifier<Map<String, RadarBlip>> {
 // ---------------------------------------------------------------------------
 
 /// Manages the lifecycle of the radar WebSocket connection.
-/// Call [connect] in `RadarView.initState` and [disconnect] in `dispose`.
 class RadarWsLifecycle extends StateNotifier<bool> {
   RadarWsLifecycle(this._ref) : super(false);
 
@@ -190,14 +276,19 @@ class RadarWsLifecycle extends StateNotifier<bool> {
   RadarWebSocketService? _wsService;
 
   Future<void> connect() async {
-    if (state) return; // already connected
+    if (state) return;
     final session = _ref.read(sessionStateProvider);
     if (session == null || session.wsUrl.isEmpty) {
       debugPrint('[RadarWsLifecycle] no session or wsUrl — skipping connect');
       return;
     }
 
-    final wsUrl = '${session.wsUrl}/ws/${session.sessionId}?token=${session.userId}';
+    final baseUrl = session.wsUrl.endsWith('/')
+        ? session.wsUrl.substring(0, session.wsUrl.length - 1)
+        : session.wsUrl;
+    final path = baseUrl.endsWith('/ws') ? '/${session.sessionId}' : '/ws/${session.sessionId}';
+    final wsUrl = '$baseUrl$path?token=${session.userId}';
+
     final service = _ref.read(radarWebSocketServiceProvider(wsUrl));
     _wsService = service;
 
@@ -230,11 +321,18 @@ final radarWsLifecycleProvider =
 });
 
 // ---------------------------------------------------------------------------
+// Incoming chat message passthrough (listened to by chat providers)
+// ---------------------------------------------------------------------------
+
+/// Each time a CHAT_MESSAGE arrives via WS, this is set to the latest message.
+/// Chat providers listen to this to update their state.
+final incomingChatMessageProvider = StateProvider<RadarMessage?>((ref) => null);
+
+// ---------------------------------------------------------------------------
 // Blip providers (downstream consumers of RadarBlipsNotifier)
 // ---------------------------------------------------------------------------
 
-/// HTTP snapshot — fetches initial member list with pre-computed
-/// bearing + distance from the backend.
+/// HTTP snapshot — fetches initial member list.
 const _emptyBlips = <String, RadarBlip>{};
 
 final liveRadarBlipsProvider =
@@ -245,18 +343,16 @@ final liveRadarBlipsProvider =
   final api = ref.watch(apiClientProvider);
 
   try {
-    final passkey = _resolvePasskey();
     final response = await retryWithBackoff(
-      task: () => api.getJson(
+      task: () => api.getJsonList(
         '/api/v1/sessions/${session.sessionId}/members',
-        query: {'p': passkey},
+        query: {'p': session.passkey},
       ),
     );
 
-    final membersData = response as List? ?? [];
     final blips = <String, RadarBlip>{};
 
-    for (final memberData in membersData) {
+    for (final memberData in response) {
       if (memberData is! Map<String, dynamic>) continue;
 
       final memberId = memberData['user_id'] as String?;
@@ -279,25 +375,13 @@ final liveRadarBlipsProvider =
     }
     return blips;
   } catch (e) {
-    debugPrint('Error fetching blips: $e');
+    debugPrint('[liveRadarBlipsProvider] Error fetching blips: $e');
     return _emptyBlips;
   }
 });
-
-/// The members endpoint currently does not require a passkey in dev,
-/// so we return an empty string. Extend this if auth is added later.
-String _resolvePasskey() => '';
 
 /// Live blip map driven by WS updates (primary source during a session).
 final radarBlipsProvider =
     StateNotifierProvider<RadarBlipsNotifier, Map<String, RadarBlip>>((ref) {
   return RadarBlipsNotifier(ref);
-});
-
-final radarBlipIdsProvider = Provider<List<String>>((ref) {
-  return ref.watch(radarBlipsProvider.select((map) => map.keys.toList()));
-});
-
-final radarBlipProvider = Provider.family<RadarBlip?, String>((ref, userId) {
-  return ref.watch(radarBlipsProvider.select((map) => map[userId]));
 });

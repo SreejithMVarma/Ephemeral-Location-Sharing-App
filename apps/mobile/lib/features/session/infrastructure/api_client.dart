@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 abstract class ApiClient {
   Future<Map<String, dynamic>> getJson(String path, {Map<String, dynamic>? query});
+  Future<List<dynamic>> getJsonList(String path, {Map<String, dynamic>? query});
   Future<Map<String, dynamic>> postJson(String path, {Map<String, dynamic>? body});
   Future<void> deleteRequest(String path, {Map<String, dynamic>? query});
 }
@@ -47,6 +48,12 @@ class DioApiClient implements ApiClient {
   Future<Map<String, dynamic>> getJson(String path, {Map<String, dynamic>? query}) async {
     final response = await _dio.get(path, queryParameters: query);
     return (response.data as Map).cast<String, dynamic>();
+  }
+
+  @override
+  Future<List<dynamic>> getJsonList(String path, {Map<String, dynamic>? query}) async {
+    final response = await _dio.get(path, queryParameters: query);
+    return response.data as List<dynamic>;
   }
 
   @override

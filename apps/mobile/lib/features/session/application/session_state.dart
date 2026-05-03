@@ -8,6 +8,7 @@ class SessionState {
     required this.userId,
     required this.displayName,
     required this.privacyMode,
+    required this.passkey,
     this.wsUrl = '',
   });
 
@@ -16,6 +17,7 @@ class SessionState {
   final String userId;
   final String displayName;
   final String privacyMode;
+  final String passkey;
 
   /// WebSocket base URL returned by the /verify endpoint (e.g. ws://10.0.2.2:8000).
   /// The full connection URL is assembled as: `$wsUrl/ws/$sessionId?token=$userId`.
@@ -27,6 +29,7 @@ class SessionState {
     String? userId,
     String? displayName,
     String? privacyMode,
+    String? passkey,
     String? wsUrl,
   }) {
     return SessionState(
@@ -35,6 +38,7 @@ class SessionState {
       userId: userId ?? this.userId,
       displayName: displayName ?? this.displayName,
       privacyMode: privacyMode ?? this.privacyMode,
+      passkey: passkey ?? this.passkey,
       wsUrl: wsUrl ?? this.wsUrl,
     );
   }
@@ -50,6 +54,7 @@ class SessionStateNotifier extends StateNotifier<SessionState?> {
     required String userId,
     required String displayName,
     required String privacyMode,
+    required String passkey,
     String wsUrl = '',
   }) {
     state = SessionState(
@@ -58,6 +63,7 @@ class SessionStateNotifier extends StateNotifier<SessionState?> {
       userId: userId,
       displayName: displayName,
       privacyMode: privacyMode,
+      passkey: passkey,
       wsUrl: wsUrl,
     );
   }

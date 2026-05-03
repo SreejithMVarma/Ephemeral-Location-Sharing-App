@@ -1,4 +1,5 @@
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class ForegroundTrackingService {
   Future<void> start(String sessionName) async {
@@ -36,3 +37,5 @@ class ForegroundTrackingService {
     }
   }
 }
+
+final foregroundTrackingServiceProvider = Provider((ref) => ForegroundTrackingService());

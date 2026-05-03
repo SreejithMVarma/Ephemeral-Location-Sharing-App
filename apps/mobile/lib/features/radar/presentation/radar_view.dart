@@ -7,9 +7,8 @@ import '../../../core/animations/app_animations.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/radar_card.dart';
 import '../../../core/widgets/radar_bottom_sheet.dart';
-import '../../chat/presentation/chat_overlay.dart';
+import '../../chat/presentation/chat_screen.dart';
 import '../../session/application/session_state.dart';
-import '../../session/infrastructure/location_broadcaster.dart';
 import '../../session/presentation/privacy_sheet.dart';
 import '../application/radar_providers.dart';
 import '../domain/radar_blip.dart';
@@ -25,6 +24,12 @@ class RadarView extends ConsumerStatefulWidget {
 class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateMixin {
   late final AnimationController _sweepController;
   late final AnimationController _entryController;
+  bool _sessionEndedHandled = false;
+  // Snapshot blips stored locally so the FutureProvider is not re-watched
+  // on every animation frame (which caused a /members API call every ~300ms).
+  Map<String, RadarBlip> _snapshotBlips = {};
+  // Track known peer IDs so we can detect when a brand-new user appears.
+  final Set<String> _knownPeerIds = {};
 
   @override
   void initState() {
@@ -38,12 +43,12 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
       vsync: this,
     )..forward();
 
-    // Connect to WebSocket and start broadcasting own location once the
-    // widget tree is ready (providers are available via ref).
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      ref.read(radarWsLifecycleProvider.notifier).connect();
-      ref.read(locationBroadcasterProvider)?.start();
+      ref.read(radarBlipsProvider.notifier).setPaused(false);
+      // Reset session-ended flag when entering the radar
+      ref.read(sessionEndedProvider.notifier).state = false;
+      _sessionEndedHandled = false;
     });
   }
 
@@ -51,21 +56,59 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
   void dispose() {
     _sweepController.dispose();
     _entryController.dispose();
-    // Disconnect WS and stop GPS broadcasting when leaving radar.
-    ref.read(radarWsLifecycleProvider.notifier).disconnect();
-    ref.read(locationBroadcasterProvider)?.stop();
+    ref.read(radarBlipsProvider.notifier).setPaused(true);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final blipIds = ref.watch(radarBlipIdsProvider);
-    final blips = blipIds
-        .map((id) => ref.watch(radarBlipProvider(id)))
-        .whereType<RadarBlip>()
-        .toList(growable: false);
+    final liveBlips = ref.watch(radarBlipsProvider);
+
+    // Watch the snapshot only to merge new results into local state —
+    // never drive animation rebuilds from this provider directly.
+    ref.listen<AsyncValue<Map<String, RadarBlip>>>(liveRadarBlipsProvider, (_, next) {
+      next.whenData((snapshot) {
+        if (mounted) setState(() => _snapshotBlips = snapshot);
+      });
+    });
+
+    // Detect new peers arriving via WebSocket and alert immediately.
+    ref.listen<Map<String, RadarBlip>>(radarBlipsProvider, (prev, next) {
+      for (final entry in next.entries) {
+        if (_knownPeerIds.contains(entry.key)) continue;
+        _knownPeerIds.add(entry.key);
+        final name = entry.value.displayName.isNotEmpty
+            ? entry.value.displayName
+            : entry.key;
+        debugPrint('[NEW PEER] *** ${name} (${entry.key}) just appeared on radar ***');
+        if (!mounted) continue;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$name appeared on radar!'),
+            backgroundColor: const Color(0xFF00C853),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
+
+    final allIds = <String>{..._snapshotBlips.keys, ...liveBlips.keys}.toList()..sort();
+
+    final blips = allIds.map((id) {
+      if (liveBlips.containsKey(id)) return liveBlips[id]!;
+      return _snapshotBlips[id]!;
+    }).toList(growable: false);
+
     final session = ref.watch(sessionStateProvider);
     final sessionName = session?.sessionName ?? 'Unnamed Session';
+
+    // Listen for SESSION_ENDED and show dialog once
+    final sessionEnded = ref.watch(sessionEndedProvider);
+    if (sessionEnded && !_sessionEndedHandled) {
+      _sessionEndedHandled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showSessionEndedDialog(context));
+    }
 
     return Scaffold(
       backgroundColor: AppColors.bg,
@@ -94,6 +137,7 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
                       IconButton(
                         onPressed: () {
                           HapticFeedback.heavyImpact();
+                          ref.read(sessionStateProvider.notifier).clearSession();
                           context.go('/');
                         },
                         icon: Container(
@@ -163,6 +207,7 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
                               ),
                             ),
                             const SizedBox(height: AppSpacing.md),
+                            // Avatar row
                             SizedBox(
                               height: 78,
                               child: ListView.separated(
@@ -215,17 +260,39 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
                               ),
                             ),
                             const SizedBox(height: AppSpacing.md),
+                            // Member list rows — tap to open DM
                             for (final blip in blips)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 8),
-                                child: RadarCard(
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(blip.displayName, style: Theme.of(context).textTheme.titleMedium),
-                                      ),
-                                      Text('${blip.distanceMeters.round()}m', style: Theme.of(context).textTheme.labelSmall),
-                                    ],
+                                child: GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    ChatScreen.show(context, initialDmUserId: blip.userId);
+                                  },
+                                  child: RadarCard(
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(blip.displayName, style: Theme.of(context).textTheme.titleMedium),
+                                              Text(
+                                                '${blip.distanceMeters.round()}m away',
+                                                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textDim),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.chat_bubble_outline, color: AppColors.blue, size: 16),
+                                            const SizedBox(width: 6),
+                                            Text('${blip.distanceMeters.round()}m', style: Theme.of(context).textTheme.labelSmall),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
@@ -238,10 +305,31 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
               ],
             ),
           ),
+          // Chat FAB — above the filter FAB
+          Positioned(
+            bottom: 158,
+            right: 16,
+            child: FloatingActionButton.small(
+              heroTag: 'chat_fab',
+              backgroundColor: AppColors.blue.withValues(alpha: 0.15),
+              foregroundColor: AppColors.blue,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(99),
+                side: BorderSide(color: AppColors.blue.withValues(alpha: 0.45), width: 0.6),
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                ChatScreen.show(context);
+              },
+              child: const Icon(Icons.chat_bubble_outline_rounded),
+            ),
+          ),
+          // Filter / privacy FAB
           Positioned(
             bottom: 104,
             right: 16,
             child: FloatingActionButton.small(
+              heroTag: 'filter_fab',
               backgroundColor: AppColors.blue.withValues(alpha: 0.15),
               foregroundColor: AppColors.blue,
               shape: RoundedRectangleBorder(
@@ -254,6 +342,7 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
                   PrivacySheet(
                     onLeave: () {
                       Navigator.of(context).pop();
+                      ref.read(sessionStateProvider.notifier).clearSession();
                       context.go('/');
                     },
                   ),
@@ -262,7 +351,36 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
               child: const Icon(Icons.tune_rounded),
             ),
           ),
-          const ChatOverlay(),
+        ],
+      ),
+    );
+  }
+
+  void _showSessionEndedDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: AppColors.amber),
+            const SizedBox(width: 8),
+            const Text('Session Ended'),
+          ],
+        ),
+        content: const Text('The host has ended this radar session.'),
+        actions: [
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.green),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              ref.read(sessionStateProvider.notifier).clearSession();
+              if (mounted) context.go('/');
+            },
+            child: const Text('OK', style: TextStyle(color: AppColors.bg)),
+          ),
         ],
       ),
     );

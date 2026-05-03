@@ -6,6 +6,7 @@ class SessionCache {
     required this.joinedAt,
     this.isCreatedByMe = false,
     this.adminId = '',
+    this.userId = '',
     this.displayName = '',
     this.privacyMode = 'direction_distance',
     this.deepLinkUrl = '',
@@ -17,6 +18,8 @@ class SessionCache {
   final String joinedAt;
   final bool isCreatedByMe;
   final String adminId;
+  /// The userId used when joining this session (always restored on rejoin).
+  final String userId;
   final String displayName;
   final String privacyMode;
   final String deepLinkUrl;
@@ -28,6 +31,7 @@ class SessionCache {
     'joined_at': joinedAt,
     'is_created_by_me': isCreatedByMe,
     'admin_id': adminId,
+    'user_id': userId,
     'display_name': displayName,
     'privacy_mode': privacyMode,
     'deep_link_url': deepLinkUrl,
@@ -41,6 +45,7 @@ class SessionCache {
       joinedAt: (json['joined_at'] as String?) ?? '',
       isCreatedByMe: (json['is_created_by_me'] as bool?) ?? false,
       adminId: (json['admin_id'] as String?) ?? '',
+      userId: (json['user_id'] as String?) ?? '',
       displayName: (json['display_name'] as String?) ?? '',
       privacyMode: (json['privacy_mode'] as String?) ?? 'direction_distance',
       deepLinkUrl: (json['deep_link_url'] as String?) ?? '',

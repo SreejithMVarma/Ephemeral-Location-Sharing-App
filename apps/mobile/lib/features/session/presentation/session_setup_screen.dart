@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../../core/error_handling/error_messages.dart';
 import '../../../core/error_handling/retry.dart';
@@ -54,6 +55,18 @@ class _SessionSetupScreenState extends ConsumerState<SessionSetupScreen> {
       _loading = true;
     });
 
+    final locStatus = await Permission.locationWhenInUse.request();
+    if (locStatus != PermissionStatus.granted) {
+      if (mounted) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission is required to create a session')),
+        );
+      }
+      return;
+    }
+    await Permission.notification.request();
+
     final api = ref.read(apiClientProvider);
     final adminId = 'admin_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -82,11 +95,17 @@ class _SessionSetupScreenState extends ConsumerState<SessionSetupScreen> {
       }
       debugPrint('[Generate QR] created session=$sessionId passkey=$passkey');
 
-      // Derive the WebSocket base URL from the region used for this session.
-      final config = ref.read(appConfigProvider);
-      final wsUrl = config.regionWsUrls['us-east'] ??
-          config.regionWsUrls.values.firstOrNull ??
-          '';
+      // Call /verify to get the correct websocket_url for this session
+      final verifyResponse = await retryWithBackoff(
+        task: () => api.getJson(
+          '/api/v1/sessions/verify',
+          query: {
+            's': sessionId,
+            'p': passkey,
+          },
+        ),
+      );
+      final wsUrl = (verifyResponse['websocket_url'] as String?) ?? '';
 
       // Save session state for the admin/creator
       ref.read(sessionStateProvider.notifier).setSession(
@@ -95,6 +114,7 @@ class _SessionSetupScreenState extends ConsumerState<SessionSetupScreen> {
         userId: adminId,
         displayName: displayName,
         privacyMode: 'full_map',
+        passkey: passkey,
         wsUrl: wsUrl,
       );
 
@@ -109,6 +129,7 @@ class _SessionSetupScreenState extends ConsumerState<SessionSetupScreen> {
           joinedAt: now,
           isCreatedByMe: true,
           adminId: adminId,
+          userId: adminId, // creator's userId IS the adminId — reused on every rejoin
           displayName: displayName,
           privacyMode: 'full_map',
           deepLinkUrl: deepLinkUrl,
