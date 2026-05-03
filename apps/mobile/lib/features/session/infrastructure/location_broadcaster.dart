@@ -140,7 +140,19 @@ final locationBroadcasterProvider = Provider<LocationBroadcaster?>((ref) {
   if (session == null) return null;
 
   final locationService = ref.watch(locationServiceProvider);
-  final wsUrl = '${session.wsUrl}/ws/${session.sessionId}?token=${session.userId}';
+
+  // Use identical URL construction to RadarBlipsNotifier so both share the
+  // same radarWebSocketServiceProvider instance (same Provider.family key).
+  // This prevents double-connect and ensures the correct wss:// URL is used
+  // regardless of whether session.wsUrl already contains the /ws path segment.
+  final baseUrl = session.wsUrl.endsWith('/')
+      ? session.wsUrl.substring(0, session.wsUrl.length - 1)
+      : session.wsUrl;
+  final path = baseUrl.endsWith('/ws')
+      ? '/${session.sessionId}'
+      : '/ws/${session.sessionId}';
+  final wsUrl = '$baseUrl$path?token=${session.userId}';
+
   final wsService = ref.watch(radarWebSocketServiceProvider(wsUrl));
 
   return LocationBroadcaster(
