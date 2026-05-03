@@ -3,35 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Join Radar Session</title>
-  <meta name="description" content="You've been invited to a live Ephemeral Radar session. Tap to open the app and join." />
-
-  <!-- Prevent search engines from indexing join links -->
+  <title>Ephemeral Radar — Join Session</title>
+  <meta name="description" content="You've been invited to a live Ephemeral Radar session." />
   <meta name="robots" content="noindex, nofollow" />
 
-  <!-- Open Graph (WhatsApp link preview) -->
-  <meta property="og:title" content="Join a Radar Session" />
-  <meta property="og:description" content="You've been invited to share locations in real-time. Tap to open Ephemeral Radar." />
+  <!-- Open Graph / WhatsApp preview -->
+  <meta property="og:title" content="You've been invited to a Radar" />
+  <meta property="og:description" content="Someone is sharing their live location with you. Open Ephemeral Radar to join." />
   <meta property="og:type" content="website" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300&display=swap" rel="stylesheet" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:        #080c12;
-      --surface:   #0e1521;
-      --border:    rgba(255,255,255,0.07);
-      --green:     #00ff88;
-      --green-dim: rgba(0,255,136,0.12);
-      --green-mid: rgba(0,255,136,0.35);
-      --text:      #e8eef5;
-      --muted:     rgba(232,238,245,0.45);
-      --danger:    #ff5a5a;
-      --radius:    20px;
+      --bg:         #070b11;
+      --surface:    #0c1220;
+      --border:     rgba(255,255,255,0.06);
+      --green:      #00ff88;
+      --green-glow: rgba(0,255,136,0.18);
+      --green-dim:  rgba(0,255,136,0.10);
+      --green-mid:  rgba(0,255,136,0.30);
+      --amber:      #ffb347;
+      --amber-dim:  rgba(255,179,71,0.10);
+      --amber-mid:  rgba(255,179,71,0.30);
+      --text:       #dde6f0;
+      --muted:      rgba(221,230,240,0.40);
+      --faint:      rgba(221,230,240,0.18);
+      --radius:     22px;
     }
 
     html, body {
@@ -48,50 +50,82 @@
       align-items: center;
       justify-content: center;
       min-height: 100dvh;
-      padding: 24px 16px;
-      background-image:
-        radial-gradient(ellipse 60% 40% at 50% -10%, rgba(0,255,136,0.08) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 30% at 80% 110%, rgba(0,120,255,0.05) 0%, transparent 60%);
+      padding: 28px 16px;
+      overflow-x: hidden;
     }
 
-    /* ── Radar ring animation ── */
+    /* ─── Ambient background blobs ─── */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 {
+      width: 500px; height: 500px;
+      background: rgba(0,255,136,0.06);
+      top: -120px; left: 50%;
+      transform: translateX(-50%);
+    }
+    .blob-2 {
+      width: 350px; height: 350px;
+      background: rgba(0,100,255,0.04);
+      bottom: -80px; right: -80px;
+    }
+
+    /* ─── Card ─── */
+    .card {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 32px 36px;
+      box-shadow:
+        0 32px 80px rgba(0,0,0,0.55),
+        0 0 0 1px rgba(0,255,136,0.03),
+        inset 0 1px 0 rgba(255,255,255,0.04);
+      text-align: center;
+    }
+
+    /* ─── Radar icon animation ─── */
     .radar-wrap {
       position: relative;
-      width: 120px;
-      height: 120px;
-      margin: 0 auto 32px;
-      flex-shrink: 0;
+      width: 110px;
+      height: 110px;
+      margin: 0 auto 30px;
     }
-
     .radar-ring {
       position: absolute;
       inset: 0;
       border-radius: 50%;
-      border: 1.5px solid var(--green-mid);
-      animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+      border: 1px solid var(--green-mid);
+      animation: ping 2.4s cubic-bezier(0,.1,.2,1) infinite;
     }
-    .radar-ring:nth-child(2) { animation-delay: 0.6s; }
-    .radar-ring:nth-child(3) { animation-delay: 1.2s; }
+    .radar-ring:nth-child(2) { animation-delay: 0.8s; }
+    .radar-ring:nth-child(3) { animation-delay: 1.6s; }
 
     @keyframes ping {
-      0%   { transform: scale(0.4); opacity: 0.8; }
-      100% { transform: scale(1.6); opacity: 0; }
+      0%   { transform: scale(0.35); opacity: 0.9; }
+      100% { transform: scale(1.65); opacity: 0; }
     }
 
     .radar-core {
       position: absolute;
-      inset: 20px;
+      inset: 18px;
       border-radius: 50%;
       background: var(--green-dim);
-      border: 1.5px solid var(--green-mid);
+      border: 1px solid var(--green-mid);
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 0 24px var(--green-glow);
     }
-
     .radar-core svg {
-      width: 28px;
-      height: 28px;
+      width: 26px; height: 26px;
       fill: none;
       stroke: var(--green);
       stroke-width: 1.8;
@@ -99,34 +133,25 @@
       stroke-linejoin: round;
     }
 
-    /* ── Card ── */
-    .card {
-      width: 100%;
-      max-width: 400px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 36px 32px 32px;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,255,136,0.04);
-      text-align: center;
-    }
+    /* ─── Invite state ─── */
+    #state-invite { display: block; }
 
     h1 {
-      font-size: 1.45rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
       margin-bottom: 10px;
+      line-height: 1.2;
     }
-
     .subtitle {
-      font-size: 0.88rem;
+      font-size: 0.87rem;
       color: var(--muted);
-      line-height: 1.55;
-      margin-bottom: 32px;
+      line-height: 1.6;
+      margin-bottom: 30px;
     }
 
-    /* ── Primary button ── */
-    .btn-open {
+    /* ─── Primary button ─── */
+    .btn-primary {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -142,255 +167,456 @@
       border: none;
       border-radius: 14px;
       cursor: pointer;
-      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
-      box-shadow: 0 4px 20px rgba(0,255,136,0.25);
       text-decoration: none;
+      box-shadow: 0 4px 24px rgba(0,255,136,0.28);
+      transition: transform 130ms ease, box-shadow 130ms ease;
     }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 36px rgba(0,255,136,0.38); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary svg { width: 18px; height: 18px; flex-shrink: 0; }
 
-    .btn-open:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 32px rgba(0,255,136,0.35);
-    }
-    .btn-open:active { transform: translateY(0); }
-
-    .btn-open svg {
-      width: 18px;
-      height: 18px;
-      flex-shrink: 0;
-    }
-
-    /* ── Status message ── */
-    #status-wrap {
-      margin-top: 20px;
-      min-height: 48px;
-    }
-
-    .status-msg {
-      font-size: 0.82rem;
-      line-height: 1.5;
-      padding: 10px 14px;
-      border-radius: 10px;
+    /* Opening pill */
+    #pill-opening {
       display: none;
-    }
-    .status-msg.show { display: block; }
-    .status-msg.info  { background: rgba(0,255,136,0.08); color: var(--green); border: 1px solid rgba(0,255,136,0.2); }
-    .status-msg.warn  { background: rgba(255,90,90,0.08);  color: var(--danger); border: 1px solid rgba(255,90,90,0.2); }
-
-    /* ── Divider ── */
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 24px 0 20px;
-      color: var(--muted);
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    .divider::before, .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    /* ── Manual steps ── */
-    .steps {
-      text-align: left;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-    .steps li {
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
-      font-size: 0.82rem;
-      color: var(--muted);
-      line-height: 1.5;
-      margin-bottom: 10px;
-    }
-    .steps li:last-child { margin-bottom: 0; }
-    .step-num {
-      flex-shrink: 0;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
+      margin-top: 14px;
+      padding: 9px 16px;
+      border-radius: 30px;
       background: var(--green-dim);
       border: 1px solid var(--green-mid);
       color: var(--green);
-      font-size: 0.7rem;
-      font-weight: 700;
+      font-size: 0.8rem;
+      font-weight: 500;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    #pill-opening.show { display: flex; }
+
+    .dot-pulse {
+      display: flex; gap: 4px;
+    }
+    .dot-pulse span {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 1.2s ease-in-out infinite;
+    }
+    .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+    .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse-dot {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40%            { transform: scale(1);   opacity: 1; }
+    }
+
+    /* ─── "App not found" state ─── */
+    #state-notfound {
+      display: none;
+      animation: fadeSlideUp 0.5s cubic-bezier(0.2,0,0,1) forwards;
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Lock icon glow */
+    .lock-wrap {
+      position: relative;
+      width: 80px; height: 80px;
+      margin: 0 auto 24px;
+    }
+    .lock-glow {
+      position: absolute;
+      inset: -12px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,179,71,0.18) 0%, transparent 70%);
+      animation: glow-pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes glow-pulse {
+      0%, 100% { opacity: 0.5; transform: scale(0.95); }
+      50%       { opacity: 1;   transform: scale(1.05); }
+    }
+    .lock-circle {
+      position: relative;
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      background: var(--amber-dim);
+      border: 1px solid var(--amber-mid);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-top: 1px;
+    }
+    .lock-circle svg {
+      width: 30px; height: 30px;
+      fill: none;
+      stroke: var(--amber);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
-    /* ── Code snippet (the radarapp:// link) ── */
-    .code-link {
-      margin-top: 20px;
-      padding: 10px 14px;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      font-family: 'Menlo', 'Consolas', monospace;
-      font-size: 0.75rem;
+    /* Teaser headline */
+    .teaser-label {
+      display: inline-block;
+      margin-bottom: 14px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      background: var(--amber-dim);
+      border: 1px solid var(--amber-mid);
+      color: var(--amber);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .notfound-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .notfound-title em {
+      font-style: italic;
+      font-weight: 300;
+      color: var(--amber);
+    }
+
+    .notfound-body {
+      font-size: 0.87rem;
       color: var(--muted);
-      word-break: break-all;
+      line-height: 1.7;
+      margin-bottom: 28px;
+    }
+    .notfound-body strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Feature hints */
+    .hints {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 28px;
       text-align: left;
     }
+    .hint {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.025);
+      border: 1px solid var(--border);
+    }
+    .hint-icon {
+      flex-shrink: 0;
+      width: 34px; height: 34px;
+      border-radius: 10px;
+      background: var(--green-dim);
+      border: 1px solid var(--green-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .hint-icon svg {
+      width: 16px; height: 16px;
+      fill: none;
+      stroke: var(--green);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .hint-text {
+      flex: 1;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .hint-text strong { color: var(--text); font-weight: 600; font-size: 0.82rem; }
 
-    /* ── Footer ── */
-    .footer {
-      margin-top: 28px;
-      font-size: 0.72rem;
-      color: rgba(232,238,245,0.2);
+    /* Countdown badge */
+    .coming-soon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(0,255,136,0.07) 0%, rgba(0,100,255,0.05) 100%);
+      border: 1px solid rgba(0,255,136,0.15);
+      margin-bottom: 16px;
+    }
+    .coming-soon-text {
+      font-size: 0.82rem;
+      line-height: 1.5;
+      text-align: left;
+    }
+    .coming-soon-text strong {
+      display: block;
+      color: var(--green);
+      font-size: 0.88rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .coming-soon-text span { color: var(--muted); }
+    .pulse-dot {
+      flex-shrink: 0;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: blink 1.8s ease-in-out infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.25; }
     }
 
-    /* ── Error state ── */
-    .error-state { display: none; }
-    .error-state.show { display: block; }
-    .error-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: var(--danger);
-      margin-bottom: 8px;
+    /* Expired link state */
+    #state-expired { display: none; }
+
+    .expired-icon {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      background: rgba(255,90,90,0.08);
+      border: 1px solid rgba(255,90,90,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
     }
-    .error-body {
+    .expired-icon svg {
+      width: 28px; height: 28px;
+      fill: none;
+      stroke: #ff5a5a;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+    }
+    .expired-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .expired-body {
       font-size: 0.85rem;
       color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ─── Footer ─── */
+    .footer {
+      margin-top: 24px;
+      font-size: 0.7rem;
+      color: var(--faint);
+      letter-spacing: 0.02em;
+      position: relative;
+      z-index: 1;
     }
   </style>
 </head>
 <body>
+
+  <!-- Ambient blobs -->
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+
   <div class="card">
 
-    <!-- Radar animation -->
-    <div class="radar-wrap">
-      <div class="radar-ring"></div>
-      <div class="radar-ring"></div>
-      <div class="radar-ring"></div>
-      <div class="radar-core">
-        <!-- location-dot icon -->
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z" stroke-dasharray="4 2"/>
-          <line x1="12" y1="2" x2="12" y2="5"/>
-          <line x1="12" y1="19" x2="12" y2="22"/>
-          <line x1="2" y1="12" x2="5" y2="12"/>
-          <line x1="19" y1="12" x2="22" y2="12"/>
-        </svg>
+    <!-- ── STATE 1: Invite (app installed, trying to open) ── -->
+    <div id="state-invite">
+      <div class="radar-wrap">
+        <div class="radar-ring"></div>
+        <div class="radar-ring"></div>
+        <div class="radar-ring"></div>
+        <div class="radar-core">
+          <svg viewBox="0 0 24 24">
+            <circle cx="12" cy="11" r="3"/>
+            <path d="M12 2C7.03 2 3 6.03 3 11c0 6.08 7.38 11.43 8.55 12.27a.75.75 0 0 0 .9 0C13.62 22.43 21 17.08 21 11c0-4.97-4.03-9-9-9z"/>
+          </svg>
+        </div>
       </div>
-    </div>
 
-    <!-- Normal join UI -->
-    <div id="join-ui">
       <h1>You're invited to a Radar</h1>
-      <p class="subtitle">Someone's sharing their live location with you.<br/>Tap below to open the Ephemeral Radar app and join.</p>
+      <p class="subtitle">Someone is sharing their live location with you.<br/>Tap below to open the Ephemeral Radar app.</p>
 
-      <button class="btn-open" id="open-btn" onclick="openApp()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
-          <circle cx="12" cy="10" r="2.5"/>
+      <button class="btn-primary" id="open-btn" onclick="openApp()">
+        <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 2C7.03 2 3 6.03 3 11c0 6.08 7.38 11.43 8.55 12.27a.75.75 0 0 0 .9 0C13.62 22.43 21 17.08 21 11c0-4.97-4.03-9-9-9z"/>
+          <circle cx="12" cy="11" r="3"/>
         </svg>
         Open Ephemeral Radar
       </button>
 
-      <div id="status-wrap">
-        <div class="status-msg info" id="msg-opening">Opening app…</div>
-        <div class="status-msg warn" id="msg-notfound">
-          Couldn't open the app automatically.<br/>
-          Copy the link below and paste it in your browser's address bar, or install the app first.
+      <div id="pill-opening">
+        <div class="dot-pulse">
+          <span></span><span></span><span></span>
+        </div>
+        Opening app…
+      </div>
+    </div>
+
+    <!-- ── STATE 2: App not installed ── -->
+    <div id="state-notfound">
+      <div class="lock-wrap">
+        <div class="lock-glow"></div>
+        <div class="lock-circle">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
         </div>
       </div>
 
-      <div class="divider">or do it manually</div>
+      <div class="teaser-label">Early Access Only</div>
 
-      <ol class="steps">
-        <li>
-          <span class="step-num">1</span>
-          <span>Make sure <strong>Ephemeral Radar</strong> is installed on your device.</span>
-        </li>
-        <li>
-          <span class="step-num">2</span>
-          <span>Tap <em>"Open Ephemeral Radar"</em> above. Android will ask you which app to open it with — choose <strong>Ephemeral Radar</strong>.</span>
-        </li>
-        <li>
-          <span class="step-num">3</span>
-          <span>If nothing happens, copy the link below and paste it into your browser's address bar.</span>
-        </li>
-      </ol>
+      <h2 class="notfound-title">
+        This isn't for<br/><em>everyone</em>. Not yet.
+      </h2>
+      <p class="notfound-body">
+        You've been invited to something that doesn't officially exist yet.<br/><br/>
+        <strong>Ephemeral Radar</strong> is a private beta — live location sharing that disappears the moment you leave. No history, no trace, no accounts. Just real-time presence, for the moment it matters.
+      </p>
 
-      <div class="code-link" id="raw-link">radarapp://join?…</div>
+      <div class="hints">
+        <div class="hint">
+          <div class="hint-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" stroke-dasharray="3 2"/></svg>
+          </div>
+          <div class="hint-text">
+            <strong>Vanishes automatically</strong><br/>
+            Sessions self-destruct. No data is stored after.
+          </div>
+        </div>
+        <div class="hint">
+          <div class="hint-icon">
+            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <div class="hint-text">
+            <strong>Invite-only groups</strong><br/>
+            One link. Everyone who matters, in one radar.
+          </div>
+        </div>
+        <div class="hint">
+          <div class="hint-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          </div>
+          <div class="hint-text">
+            <strong>No accounts required</strong><br/>
+            Just a name, a radar, and the people you trust.
+          </div>
+        </div>
+      </div>
+
+      <div class="coming-soon">
+        <div class="pulse-dot"></div>
+        <div class="coming-soon-text">
+          <strong>Coming to your hands soon</strong>
+          <span>The person who shared this already has it. You're next in line.</span>
+        </div>
+      </div>
+
+      <p style="font-size:0.75rem; color: var(--faint); line-height:1.6;">
+        Ask whoever shared this link to add you when early access opens. The radar they created is live — you just need the app.
+      </p>
     </div>
 
-    <!-- Error state: missing params -->
-    <div class="error-state" id="error-ui">
-      <p class="error-title">Invalid or expired link</p>
-      <p class="error-body">This invite link is missing required information. Please ask the session host to share the link again.</p>
+    <!-- ── STATE 3: Invalid / missing params ── -->
+    <div id="state-expired">
+      <div class="expired-icon">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+      <p class="expired-title">Link expired or invalid</p>
+      <p class="expired-body">
+        This invite link is missing session info or has already expired.<br/>
+        Ask the session host to share a fresh link.
+      </p>
     </div>
 
-    <p class="footer">Ephemeral Radar &mdash; links expire with the session</p>
   </div>
+
+  <p class="footer">Ephemeral Radar &mdash; present for a moment, gone forever</p>
 
   <script>
     (function () {
-      var params  = new URLSearchParams(window.location.search);
-      var s       = params.get('s') || '';   // session ID
-      var p       = params.get('p') || '';   // passkey
-      var r       = params.get('r') || '';   // region
+      var params = new URLSearchParams(window.location.search);
+      var s = params.get('s') || '';
+      var p = params.get('p') || '';
+      var r = params.get('r') || '';
 
-      var deepLink = 'radarapp://join?s=' + encodeURIComponent(s) +
-                     '&p=' + encodeURIComponent(p) +
-                     '&r=' + encodeURIComponent(r);
+      var stateInvite   = document.getElementById('state-invite');
+      var stateNotfound = document.getElementById('state-notfound');
+      var stateExpired  = document.getElementById('state-expired');
+      var pillOpening   = document.getElementById('pill-opening');
 
-      // Show raw link so users can copy-paste if needed
-      document.getElementById('raw-link').textContent = deepLink;
+      function showOnly(el) {
+        stateInvite.style.display   = 'none';
+        stateNotfound.style.display = 'none';
+        stateExpired.style.display  = 'none';
+        el.style.display = 'block';
+      }
 
       // Validate params
       if (!s || !p) {
-        document.getElementById('join-ui').style.display = 'none';
-        document.getElementById('error-ui').classList.add('show');
+        showOnly(stateExpired);
         return;
       }
 
-      function show(id) {
-        document.getElementById(id).classList.add('show');
-      }
-      function hide(id) {
-        document.getElementById(id).classList.remove('show');
-      }
+      var deepLink = 'radarapp://join?s=' + encodeURIComponent(s)
+                   + '&p=' + encodeURIComponent(p)
+                   + '&r=' + encodeURIComponent(r);
+
+      var attempted = false;
+      var notFoundTimer = null;
 
       function openApp() {
-        show('msg-opening');
+        if (attempted) return;
+        attempted = true;
 
-        // Attempt to open the custom scheme.
-        // We use a hidden iframe trick which avoids the "Leave Page?" dialog
-        // on some Android browsers.
+        pillOpening.classList.add('show');
+        document.getElementById('open-btn').disabled = true;
+
+        // Hidden iframe — avoids "Leave site?" dialog on Chrome Android
         var iframe = document.createElement('iframe');
-        iframe.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;';
+        iframe.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;top:-10px;left:-10px;';
         iframe.src = deepLink;
         document.body.appendChild(iframe);
 
-        // Also try window.location as a fallback for browsers that block iframes
-        setTimeout(function () { window.location.href = deepLink; }, 50);
-
-        // If we're still here after 2.5 s, the app probably isn't installed
+        // window.location fallback (some browsers block iframes for custom schemes)
         setTimeout(function () {
-          hide('msg-opening');
-          show('msg-notfound');
+          window.location.href = deepLink;
+        }, 50);
+
+        // If still here after 2.5s → app isn't installed
+        notFoundTimer = setTimeout(function () {
+          pillOpening.classList.remove('show');
+          showOnly(stateNotfound);
         }, 2500);
       }
 
-      // Expose to onclick
+      // Expose to button onclick
       window.openApp = openApp;
 
-      // Auto-trigger on load (helps when the user taps the link in WhatsApp
-      // and the browser opens this page directly).
-      // We delay slightly so the page has rendered first.
+      // Auto-trigger shortly after load — catches the WhatsApp tap-to-browser flow
       window.addEventListener('load', function () {
-        setTimeout(openApp, 600);
+        setTimeout(openApp, 700);
+      });
+
+      // If the page regains focus after the deep link fired,
+      // the app likely opened — cancel the "not found" timer
+      window.addEventListener('focus', function () {
+        if (notFoundTimer) {
+          clearTimeout(notFoundTimer);
+          notFoundTimer = null;
+          pillOpening.classList.remove('show');
+          document.getElementById('open-btn').disabled = false;
+          attempted = false;
+        }
       });
     })();
   </script>
