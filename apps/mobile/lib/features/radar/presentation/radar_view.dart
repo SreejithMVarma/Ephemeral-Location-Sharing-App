@@ -30,6 +30,13 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
   Map<String, RadarBlip> _snapshotBlips = {};
   // Track known peer IDs so we can detect when a brand-new user appears.
   final Set<String> _knownPeerIds = {};
+  // Proximity tracking: last distance per peer and last time we alerted.
+  final Map<String, double> _lastDistance = {};
+  final Map<String, int> _lastProximityAlertMs = {};
+  // Distance threshold (metres) to trigger a "met" alert.
+  static const double _metThresholdM = 30.0;
+  // Minimum gap between repeated alerts for the same peer (ms).
+  static const int _metCooldownMs = 60000;
 
   @override
   void initState() {
@@ -72,24 +79,61 @@ class _RadarViewState extends ConsumerState<RadarView> with TickerProviderStateM
       });
     });
 
-    // Detect new peers arriving via WebSocket and alert immediately.
+    // Detect new peers and proximity alerts when blips update.
     ref.listen<Map<String, RadarBlip>>(radarBlipsProvider, (prev, next) {
+      final now = DateTime.now().millisecondsSinceEpoch;
       for (final entry in next.entries) {
-        if (_knownPeerIds.contains(entry.key)) continue;
-        _knownPeerIds.add(entry.key);
-        final name = entry.value.displayName.isNotEmpty
-            ? entry.value.displayName
-            : entry.key;
-        debugPrint('[NEW PEER] *** ${name} (${entry.key}) just appeared on radar ***');
-        if (!mounted) continue;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$name appeared on radar!'),
-            backgroundColor: const Color(0xFF00C853),
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 4),
-          ),
-        );
+        final id = entry.key;
+        final blip = entry.value;
+        final name = blip.displayName.isNotEmpty ? blip.displayName : id;
+
+        // ── New peer appeared ──
+        if (!_knownPeerIds.contains(id)) {
+          _knownPeerIds.add(id);
+          debugPrint('[NEW PEER] *** $name ($id) just appeared on radar ***');
+          if (!mounted) continue;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$name appeared on radar!'),
+              backgroundColor: const Color(0xFF00C853),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+
+        // ── Proximity "met" alert ──
+        final prevDist = _lastDistance[id] ?? double.infinity;
+        final currDist = blip.distanceMeters;
+        _lastDistance[id] = currDist;
+
+        final lastAlert = _lastProximityAlertMs[id] ?? 0;
+        final cooldownOk = (now - lastAlert) >= _metCooldownMs;
+
+        if (currDist < _metThresholdM && prevDist >= _metThresholdM && cooldownOk) {
+          _lastProximityAlertMs[id] = now;
+          debugPrint('[NEAR] met $name at ${currDist.toStringAsFixed(0)}m');
+          HapticFeedback.heavyImpact();
+          if (!mounted) continue;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Text('🎉 ', style: TextStyle(fontSize: 18)),
+                  Expanded(
+                    child: Text(
+                      "You've reached $name!",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF6200EA),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 6),
+            ),
+          );
+        }
       }
     });
 
