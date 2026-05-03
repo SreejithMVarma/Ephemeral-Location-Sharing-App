@@ -1,8 +1,10 @@
 import json
 from contextlib import asynccontextmanager
 
+from pathlib import Path
+
 from fastapi import FastAPI, Request, WebSocket
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.routing import APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -69,4 +71,16 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     token = websocket.query_params.get("token", "")
     await websocket_service.handle_connection(websocket, session_id=session_id, token=token)
 
+
+_JOIN_PAGE = Path(__file__).parent / "static" / "join.html"
+
+
+@app.get("/join", include_in_schema=False)
+async def join_redirect():
+    """Serve the deep-link redirect page for radarapp:// scheme.
+
+    Query params (s, p, r) are forwarded transparently — the page reads
+    them client-side via URLSearchParams and constructs the radarapp:// URI.
+    """
+    return FileResponse(_JOIN_PAGE, media_type="text/html")
 

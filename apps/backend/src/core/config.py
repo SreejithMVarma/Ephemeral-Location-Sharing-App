@@ -6,6 +6,10 @@ class Settings(BaseSettings):
     api_base_url: str
     fcm_sender_id: str
     deep_link_scheme: str
+    # HTTPS URL of the hosted redirect page (e.g. https://yourdomain.com/join).
+    # When set, deep links are emitted as https:// URLs so they work from
+    # WhatsApp and other apps that block custom URL schemes.
+    deep_link_base_url: str | None = None
     region_ws_urls: str
     cors_allowed_origins: str
     redis_url: str

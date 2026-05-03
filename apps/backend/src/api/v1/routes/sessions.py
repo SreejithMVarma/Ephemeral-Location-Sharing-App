@@ -15,9 +15,11 @@ from src.models.session import (
     VerifySessionResponse,
 )
 from src.repositories.session_repository import SessionRepository
+from src.services.websocket_service import WebSocketService
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 repository = SessionRepository()
+ws_service = WebSocketService()
 logger = logging.getLogger(__name__)
 
 
@@ -40,7 +42,16 @@ async def create_session(payload: CreateSessionRequest) -> CreateSessionResponse
     """Create a new session (radar)."""
     session_id = str(uuid4())
     passkey = _generate_passkey()
-    deep_link_url = f"{settings.deep_link_scheme}://join?s={session_id}&p={passkey}&r={payload.region}"
+
+    # Prefer an HTTPS redirect URL (works from WhatsApp / any browser).
+    # Falls back to the custom scheme for local dev where DEEP_LINK_BASE_URL is unset.
+    query = f"s={session_id}&p={passkey}&r={payload.region}"
+    if settings.deep_link_base_url:
+        base = settings.deep_link_base_url.rstrip("/")
+        deep_link_url = f"{base}?{query}"
+    else:
+        deep_link_url = f"{settings.deep_link_scheme}://join?{query}"
+
 
     logger.info(f"Creating session: {session_id} ({payload.session_name})")
 
@@ -163,7 +174,7 @@ async def delete_session(
     session_id: str,
     admin_id: str = Query(alias="admin_id"),
 ) -> dict[str, str]:
-    """Delete/destroy a session (admin only)."""
+    """Delete/destroy a session (admin only). Notifies all connected clients first."""
     session = await repository.get_hash(repository.session_key(session_id))
     if not session:
         raise NotFoundError("Radar not found")
@@ -172,9 +183,12 @@ async def delete_session(
     if session.get("admin_id") != admin_id:
         raise HTTPException(status_code=403, detail="Only admin can delete session")
 
-    logger.info(f"Admin {admin_id} deleting session {session_id}")
+    logger.info(f"Admin {admin_id} destroying session {session_id}")
 
-    # Delete entire session cascade
+    # Broadcast SESSION_ENDED to all live WebSocket connections first
+    await ws_service.broadcast_session_ended(session_id)
+
+    # Delete entire session cascade from Redis
     await repository.delete_session_cascade(session_id)
-    
+
     return {"status": "deleted"}

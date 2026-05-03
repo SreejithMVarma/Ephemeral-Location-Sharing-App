@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join Radar Session</title>
+  <meta name="description" content="You've been invited to a live Ephemeral Radar session. Tap to open the app and join." />
+
+  <!-- Prevent search engines from indexing join links -->
+  <meta name="robots" content="noindex, nofollow" />
+
+  <!-- Open Graph (WhatsApp link preview) -->
+  <meta property="og:title" content="Join a Radar Session" />
+  <meta property="og:description" content="You've been invited to share locations in real-time. Tap to open Ephemeral Radar." />
+  <meta property="og:type" content="website" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080c12;
+      --surface:   #0e1521;
+      --border:    rgba(255,255,255,0.07);
+      --green:     #00ff88;
+      --green-dim: rgba(0,255,136,0.12);
+      --green-mid: rgba(0,255,136,0.35);
+      --text:      #e8eef5;
+      --muted:     rgba(232,238,245,0.45);
+      --danger:    #ff5a5a;
+      --radius:    20px;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100dvh;
+      padding: 24px 16px;
+      background-image:
+        radial-gradient(ellipse 60% 40% at 50% -10%, rgba(0,255,136,0.08) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 30% at 80% 110%, rgba(0,120,255,0.05) 0%, transparent 60%);
+    }
+
+    /* ── Radar ring animation ── */
+    .radar-wrap {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 32px;
+      flex-shrink: 0;
+    }
+
+    .radar-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1.5px solid var(--green-mid);
+      animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+    .radar-ring:nth-child(2) { animation-delay: 0.6s; }
+    .radar-ring:nth-child(3) { animation-delay: 1.2s; }
+
+    @keyframes ping {
+      0%   { transform: scale(0.4); opacity: 0.8; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    .radar-core {
+      position: absolute;
+      inset: 20px;
+      border-radius: 50%;
+      background: var(--green-dim);
+      border: 1.5px solid var(--green-mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .radar-core svg {
+      width: 28px;
+      height: 28px;
+      fill: none;
+      stroke: var(--green);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* ── Card ── */
+    .card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 36px 32px 32px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,255,136,0.04);
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.45rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 32px;
+    }
+
+    /* ── Primary button ── */
+    .btn-open {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 15px 24px;
+      background: var(--green);
+      color: #000;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+      box-shadow: 0 4px 20px rgba(0,255,136,0.25);
+      text-decoration: none;
+    }
+
+    .btn-open:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,255,136,0.35);
+    }
+    .btn-open:active { transform: translateY(0); }
+
+    .btn-open svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    /* ── Status message ── */
+    #status-wrap {
+      margin-top: 20px;
+      min-height: 48px;
+    }
+
+    .status-msg {
+      font-size: 0.82rem;
+      line-height: 1.5;
+      padding: 10px 14px;
+      border-radius: 10px;
+      display: none;
+    }
+    .status-msg.show { display: block; }
+    .status-msg.info  { background: rgba(0,255,136,0.08); color: var(--green); border: 1px solid rgba(0,255,136,0.2); }
+    .status-msg.warn  { background: rgba(255,90,90,0.08);  color: var(--danger); border: 1px solid rgba(255,90,90,0.2); }
+
+    /* ── Divider ── */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0 20px;
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Manual steps ── */
+    .steps {
+      text-align: left;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .steps li {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .steps li:last-child { margin-bottom: 0; }
+    .step-num {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--green-dim);
+      border: 1px solid var(--green-mid);
+      color: var(--green);
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    /* ── Code snippet (the radarapp:// link) ── */
+    .code-link {
+      margin-top: 20px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+      word-break: break-all;
+      text-align: left;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      margin-top: 28px;
+      font-size: 0.72rem;
+      color: rgba(232,238,245,0.2);
+    }
+
+    /* ── Error state ── */
+    .error-state { display: none; }
+    .error-state.show { display: block; }
+    .error-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--danger);
+      margin-bottom: 8px;
+    }
+    .error-body {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+
+    <!-- Radar animation -->
+    <div class="radar-wrap">
+      <div class="radar-ring"></div>
+      <div class="radar-ring"></div>
+      <div class="radar-ring"></div>
+      <div class="radar-core">
+        <!-- location-dot icon -->
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 2a10 10 0 0 1 10 10c0 5.52-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z" stroke-dasharray="4 2"/>
+          <line x1="12" y1="2" x2="12" y2="5"/>
+          <line x1="12" y1="19" x2="12" y2="22"/>
+          <line x1="2" y1="12" x2="5" y2="12"/>
+          <line x1="19" y1="12" x2="22" y2="12"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Normal join UI -->
+    <div id="join-ui">
+      <h1>You're invited to a Radar</h1>
+      <p class="subtitle">Someone's sharing their live location with you.<br/>Tap below to open the Ephemeral Radar app and join.</p>
+
+      <button class="btn-open" id="open-btn" onclick="openApp()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+          <circle cx="12" cy="10" r="2.5"/>
+        </svg>
+        Open Ephemeral Radar
+      </button>
+
+      <div id="status-wrap">
+        <div class="status-msg info" id="msg-opening">Opening app…</div>
+        <div class="status-msg warn" id="msg-notfound">
+          Couldn't open the app automatically.<br/>
+          Copy the link below and paste it in your browser's address bar, or install the app first.
+        </div>
+      </div>
+
+      <div class="divider">or do it manually</div>
+
+      <ol class="steps">
+        <li>
+          <span class="step-num">1</span>
+          <span>Make sure <strong>Ephemeral Radar</strong> is installed on your device.</span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span>Tap <em>"Open Ephemeral Radar"</em> above. Android will ask you which app to open it with — choose <strong>Ephemeral Radar</strong>.</span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span>If nothing happens, copy the link below and paste it into your browser's address bar.</span>
+        </li>
+      </ol>
+
+      <div class="code-link" id="raw-link">radarapp://join?…</div>
+    </div>
+
+    <!-- Error state: missing params -->
+    <div class="error-state" id="error-ui">
+      <p class="error-title">Invalid or expired link</p>
+      <p class="error-body">This invite link is missing required information. Please ask the session host to share the link again.</p>
+    </div>
+
+    <p class="footer">Ephemeral Radar &mdash; links expire with the session</p>
+  </div>
+
+  <script>
+    (function () {
+      var params  = new URLSearchParams(window.location.search);
+      var s       = params.get('s') || '';   // session ID
+      var p       = params.get('p') || '';   // passkey
+      var r       = params.get('r') || '';   // region
+
+      var deepLink = 'radarapp://join?s=' + encodeURIComponent(s) +
+                     '&p=' + encodeURIComponent(p) +
+                     '&r=' + encodeURIComponent(r);
+
+      // Show raw link so users can copy-paste if needed
+      document.getElementById('raw-link').textContent = deepLink;
+
+      // Validate params
+      if (!s || !p) {
+        document.getElementById('join-ui').style.display = 'none';
+        document.getElementById('error-ui').classList.add('show');
+        return;
+      }
+
+      function show(id) {
+        document.getElementById(id).classList.add('show');
+      }
+      function hide(id) {
+        document.getElementById(id).classList.remove('show');
+      }
+
+      function openApp() {
+        show('msg-opening');
+
+        // Attempt to open the custom scheme.
+        // We use a hidden iframe trick which avoids the "Leave Page?" dialog
+        // on some Android browsers.
+        var iframe = document.createElement('iframe');
+        iframe.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;';
+        iframe.src = deepLink;
+        document.body.appendChild(iframe);
+
+        // Also try window.location as a fallback for browsers that block iframes
+        setTimeout(function () { window.location.href = deepLink; }, 50);
+
+        // If we're still here after 2.5 s, the app probably isn't installed
+        setTimeout(function () {
+          hide('msg-opening');
+          show('msg-notfound');
+        }, 2500);
+      }
+
+      // Expose to onclick
+      window.openApp = openApp;
+
+      // Auto-trigger on load (helps when the user taps the link in WhatsApp
+      // and the browser opens this page directly).
+      // We delay slightly so the page has rendered first.
+      window.addEventListener('load', function () {
+        setTimeout(openApp, 600);
+      });
+    })();
+  </script>
+</body>
+</html>
