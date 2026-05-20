@@ -153,6 +153,7 @@ class _JoinScreenState extends ConsumerState<JoinScreen> {
         privacyMode: _preJoinMode.name,
         passkey: widget.passkey,
         wsUrl: wsUrl,
+        isCreatedByMe: false,
       );
 
       notifications.bindTokenRefresh(sessionId: widget.sessionId, userId: userId);

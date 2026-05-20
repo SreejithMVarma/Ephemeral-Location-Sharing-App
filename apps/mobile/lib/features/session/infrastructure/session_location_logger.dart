@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 /// Writes structured location events to a per-session log file in the app's
 /// documents directory.
 ///
-/// File path: <Documents>/ephemeral_logs/session_<id>_<date>.log
+/// File path: `Documents/ephemeral_logs/session_<id>_<date>.log`
 ///
 /// Each line is a CSV row:
 ///   timestamp,event,userId,lat,lng,accuracy,speed,bearing

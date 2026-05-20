@@ -31,8 +31,11 @@ websocket_service = WebSocketService()
 async def lifespan(_: FastAPI):
     register_expiry_callback(session_repository.on_expired_key)
     await init_redis()
+    # Start WebSocketService background listeners that depend on Redis
+    await websocket_service.start_redis_listener()
     yield
     await close_redis()
+    await websocket_service.stop_redis_listener()
 
 
 app = FastAPI(title="Ephemeral Radar Backend", version="0.1.0", lifespan=lifespan)

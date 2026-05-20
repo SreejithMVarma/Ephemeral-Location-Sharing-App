@@ -10,6 +10,8 @@ ACTIVE_SESSIONS = Gauge("active_sessions_total", "Active radar sessions")
 ACTIVE_CONNECTIONS = Gauge("active_connections_total", "Active websocket connections")
 WS_BROADCAST_LATENCY = Histogram("ws_broadcast_latency_seconds", "WebSocket broadcast latency")
 LOCATION_UPDATES = Counter("location_updates_per_second", "Location updates processed")
+VIEWPORT_SUBSCRIPTIONS = Counter("viewport_subscriptions_total", "Viewport subscriptions created")
+VIEWPORT_UNSUBSCRIPTIONS = Counter("viewport_unsubscriptions_total", "Viewport subscriptions removed")
 
 
 def increment_active_sessions() -> None:
@@ -34,6 +36,14 @@ def observe_ws_broadcast_latency(seconds: float) -> None:
 
 def increment_location_updates() -> None:
     LOCATION_UPDATES.inc()
+
+
+def increment_viewport_subscriptions() -> None:
+    VIEWPORT_SUBSCRIPTIONS.inc()
+
+
+def increment_viewport_unsubscriptions() -> None:
+    VIEWPORT_UNSUBSCRIPTIONS.inc()
 
 
 def bind_metrics(app: FastAPI) -> None:

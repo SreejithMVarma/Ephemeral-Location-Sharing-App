@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../features/auth/application/auth_state.dart';
 import '../../features/compass/presentation/compass_view.dart';
 import '../../features/radar/presentation/radar_view.dart';
+import '../../features/map/presentation/full_map_view.dart';
 import '../../features/session/presentation/entry_screen.dart';
 import '../../features/session/presentation/join_screen.dart';
 import '../../features/session/presentation/qr_scanner_screen.dart';
@@ -92,6 +93,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/radar',
         builder: (context, state) => const RadarView(),
+      ),
+      GoRoute(
+        path: '/full-map',
+        builder: (context, state) => const FullMapView(),
       ),
       GoRoute(
         path: '/compass/:userId',

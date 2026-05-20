@@ -225,6 +225,7 @@ class _WaitingRoomScreenState extends ConsumerState<WaitingRoomScreen> {
                     label: 'Launch Radar',
                     onPressed: () async {
                       HapticFeedback.mediumImpact();
+                      final router = GoRouter.of(context);
                       // Restore sessionStateProvider from local history before navigating
                       final storage = await ref.read(localStorageServiceProvider.future);
                       final history = await storage.readSessionHistory();
@@ -238,10 +239,12 @@ class _WaitingRoomScreenState extends ConsumerState<WaitingRoomScreen> {
                           privacyMode: cached.privacyMode,
                           passkey: cached.authToken,
                           wsUrl: (await _fetchWsUrl(ref, cached.sessionId, cached.authToken)),
+                          isCreatedByMe: cached.isCreatedByMe,
+                          adminId: cached.adminId,
                         );
                       }
                       if (!mounted) return;
-                      context.push('/radar');
+                      router.push('/radar');
                     },
                   ),
                 ],

@@ -164,9 +164,9 @@ class _EntryScreenState extends ConsumerState<EntryScreen> with TickerProviderSt
                                     HapticFeedback.lightImpact();
                                     _showQrBottomSheet(context, session);
                                   } : null,
-                                  onViewParticipants: session.isCreatedByMe && session.deepLinkUrl != null ? () {
+                                  onViewParticipants: session.isCreatedByMe && session.deepLinkUrl.isNotEmpty ? () {
                                     HapticFeedback.lightImpact();
-                                    context.push('/waiting?link=${Uri.encodeComponent(session.deepLinkUrl!)}');
+                                    context.push('/waiting?link=${Uri.encodeComponent(session.deepLinkUrl)}');
                                   } : null,
                                   onDelete: session.isCreatedByMe ? () {
                                     _showDeleteConfirmation(context, session);
@@ -594,8 +594,9 @@ class _QrShareSheet extends StatelessWidget {
                   child: GestureDetector(
                     onTap: () {
                       HapticFeedback.lightImpact();
+                      final messenger = ScaffoldMessenger.of(context);
                       Clipboard.setData(ClipboardData(text: session.deepLinkUrl)).then((_) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        messenger.showSnackBar(
                           const SnackBar(content: Text('Link copied to clipboard')),
                         );
                       });

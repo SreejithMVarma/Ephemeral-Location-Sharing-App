@@ -8,7 +8,6 @@ import '../../../core/error_handling/retry.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/radar_button.dart';
 import '../../../core/widgets/radar_text_field.dart';
-import '../../../main.dart';
 import '../application/rejoin_service.dart';
 import '../application/session_state.dart';
 import '../domain/session_cache.dart';
@@ -116,6 +115,8 @@ class _SessionSetupScreenState extends ConsumerState<SessionSetupScreen> {
         privacyMode: 'full_map',
         passkey: passkey,
         wsUrl: wsUrl,
+        isCreatedByMe: true,
+        adminId: adminId,
       );
 
       // Save to local storage history with timestamp

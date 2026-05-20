@@ -13,6 +13,12 @@ class WsMessageType(str, Enum):
     PING = "PING"
     PONG = "PONG"
     RATE_LIMITED = "RATE_LIMITED"
+    # Viewport subscription / full-map message types
+    VIEWPORT_SUBSCRIBE = "VIEWPORT_SUBSCRIBE"
+    VIEWPORT_UNSUBSCRIBE = "VIEWPORT_UNSUBSCRIBE"
+    VIEWPORT_SNAPSHOT = "VIEWPORT_SNAPSHOT"
+    VIEWPORT_DIFF = "VIEWPORT_DIFF"
+    CLUSTER_UPDATE = "CLUSTER_UPDATE"
 
 
 class WsEnvelope(BaseModel):

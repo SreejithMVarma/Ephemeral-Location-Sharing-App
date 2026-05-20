@@ -10,6 +10,8 @@ class SessionState {
     required this.privacyMode,
     required this.passkey,
     this.wsUrl = '',
+    this.isCreatedByMe = false,
+    this.adminId = '',
   });
 
   final String sessionId;
@@ -22,6 +24,8 @@ class SessionState {
   /// WebSocket base URL returned by the /verify endpoint (e.g. ws://10.0.2.2:8000).
   /// The full connection URL is assembled as: `$wsUrl/ws/$sessionId?token=$userId`.
   final String wsUrl;
+  final bool isCreatedByMe;
+  final String adminId;
 
   SessionState copyWith({
     String? sessionId,
@@ -31,6 +35,8 @@ class SessionState {
     String? privacyMode,
     String? passkey,
     String? wsUrl,
+    bool? isCreatedByMe,
+    String? adminId,
   }) {
     return SessionState(
       sessionId: sessionId ?? this.sessionId,
@@ -40,6 +46,8 @@ class SessionState {
       privacyMode: privacyMode ?? this.privacyMode,
       passkey: passkey ?? this.passkey,
       wsUrl: wsUrl ?? this.wsUrl,
+      isCreatedByMe: isCreatedByMe ?? this.isCreatedByMe,
+      adminId: adminId ?? this.adminId,
     );
   }
 }
@@ -56,6 +64,8 @@ class SessionStateNotifier extends StateNotifier<SessionState?> {
     required String privacyMode,
     required String passkey,
     String wsUrl = '',
+    bool isCreatedByMe = false,
+    String adminId = '',
   }) {
     state = SessionState(
       sessionId: sessionId,
@@ -65,6 +75,8 @@ class SessionStateNotifier extends StateNotifier<SessionState?> {
       privacyMode: privacyMode,
       passkey: passkey,
       wsUrl: wsUrl,
+      isCreatedByMe: isCreatedByMe,
+      adminId: adminId,
     );
   }
 

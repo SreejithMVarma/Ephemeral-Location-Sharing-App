@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 import 'core/navigation/app_router.dart';
 import 'core/navigation/deep_link_service.dart';
@@ -33,6 +34,11 @@ Future<void> main() async {
       appVersion: appVersion,
       buildFlavor: buildFlavor,
     );
+
+    final mapboxToken = const String.fromEnvironment('MAPBOX_TOKEN');
+    if (mapboxToken.isNotEmpty) {
+      MapboxOptions.setAccessToken(mapboxToken);
+    }
 
     await startup.bootstrapCritical();
 
